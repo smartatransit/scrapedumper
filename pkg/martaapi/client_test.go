@@ -24,9 +24,14 @@ var _ = Describe("Client", func() {
 		schedules []Schedule
 	)
 	BeforeEach(func() {
+		resp = &http.Response{
+			Body: ioutil.NopCloser(bytes.NewBufferString("[]")),
+		}
 		doer = new(martaapifakes.FakeDoer)
 		apiKey = "apikey"
 		err = nil
+		schedules = nil
+		retErr = nil
 	})
 	JustBeforeEach(func() {
 		doer.DoReturns(resp, retErr)
@@ -38,6 +43,16 @@ var _ = Describe("Client", func() {
 	Context("FindSchedules", func() {
 		JustBeforeEach(func() {
 			schedules, err = client.FindSchedules()
+		})
+		When("called", func() {
+			var (
+				req *http.Request
+			)
+			It("adds the correct api key", func() {
+				req = doer.DoArgsForCall(0)
+				qParams := req.URL.Query()
+				Expect(qParams["apiKey"][0]).To(Equal(apiKey))
+			})
 		})
 		When("marta returns an invalid body", func() {
 			BeforeEach(func() {

@@ -39,6 +39,17 @@ type Client struct {
 	ApiKey string
 }
 
+func (c Client) buildRequest(method string, path string) (*http.Request, error) {
+	req, err := http.NewRequest(method, path, nil)
+	if err != nil {
+		return req, err
+	}
+	q := req.URL.Query()
+	q.Add("apiKey", c.ApiKey)
+	req.URL.RawQuery = q.Encode()
+	return req, err
+}
+
 // FindSchedules will retrieve a set of schedules
 func (c Client) FindSchedules() ([]Schedule, error) {
 	var (
@@ -50,10 +61,11 @@ func (c Client) FindSchedules() ([]Schedule, error) {
 	// lazy, url package
 	path := MartaBaseURI + RealtimeTrainTimeEndpoint
 
-	req, err := http.NewRequest("GET", path, nil)
+	req, err := c.buildRequest("GET", path)
 	if err != nil {
 		return schedules, err
 	}
+
 	resp, err := c.Doer.Do(req)
 	if err != nil {
 		return schedules, err
