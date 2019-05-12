@@ -54,7 +54,7 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 }
 
 func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
-	c.logger.Info("scrape and dumping")
+	c.logger.Debug("scrape and dumping")
 	schedules, err := c.scheduleFinder.FindSchedules(ctx)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 	}
 
 	r := bytes.NewReader(b)
-	err = c.dumper.Dump(ctx, r, time.Now().UTC().String())
+	err = c.dumper.Dump(ctx, r, time.Now().Format(time.RFC3339)+".json")
 	if err != nil {
 		return err
 	}

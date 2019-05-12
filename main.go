@@ -50,10 +50,10 @@ func main() {
 	poller := worker.New(dump, martaClient, 15*time.Second, logger)
 
 	errC := make(chan error, 1)
-	poller.Poll(ctx, errC)
-
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
+
+	poller.Poll(ctx, errC)
 
 	select {
 	case err := <-errC:
