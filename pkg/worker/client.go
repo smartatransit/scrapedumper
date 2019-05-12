@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/bipol/scrapedumper/pkg/dumper"
@@ -34,7 +33,7 @@ func New(dumper dumper.Dumper, api martaapi.ScheduleFinder, pollTime time.Durati
 }
 
 func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
-	fmt.Println("starting to poll")
+	c.logger.Info("starting to poll")
 	go func() {
 		for {
 			select {
