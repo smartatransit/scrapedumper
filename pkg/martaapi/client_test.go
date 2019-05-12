@@ -2,6 +2,7 @@ package martaapi_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -42,7 +43,7 @@ var _ = Describe("Client", func() {
 	})
 	Context("FindSchedules", func() {
 		JustBeforeEach(func() {
-			schedules, err = client.FindSchedules()
+			schedules, err = client.FindSchedules(context.Background())
 		})
 		When("called", func() {
 			var (

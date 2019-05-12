@@ -1,6 +1,7 @@
 package martaapi
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -8,7 +9,7 @@ import (
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ScheduleFinder
 type ScheduleFinder interface {
-	FindSchedule() (Schedule, error)
+	FindSchedules(ctx context.Context) ([]Schedule, error)
 }
 
 type Schedule struct {
@@ -33,6 +34,13 @@ type Doer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+func New(doer Doer, apiKey string) Client {
+	return Client{
+		doer,
+		apiKey,
+	}
+}
+
 // Client will hold all of the deps required to find schedules
 type Client struct {
 	Doer   Doer
@@ -51,14 +59,12 @@ func (c Client) buildRequest(method string, path string) (*http.Request, error) 
 }
 
 // FindSchedules will retrieve a set of schedules
-func (c Client) FindSchedules() ([]Schedule, error) {
+func (c Client) FindSchedules(ctx context.Context) ([]Schedule, error) {
 	var (
 		schedules []Schedule
 		err       error
 	)
 
-	//TODO: need to add api key addition here too
-	// lazy, url package
 	path := MartaBaseURI + RealtimeTrainTimeEndpoint
 
 	req, err := c.buildRequest("GET", path)

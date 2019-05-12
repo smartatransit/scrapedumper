@@ -2,15 +2,17 @@
 package martaapifakes
 
 import (
+	"context"
 	"sync"
 
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 )
 
 type FakeScheduleFinder struct {
-	FindScheduleStub        func() (martaapi.Schedule, error)
+	FindScheduleStub        func(context.Context) (martaapi.Schedule, error)
 	findScheduleMutex       sync.RWMutex
 	findScheduleArgsForCall []struct {
+		arg1 context.Context
 	}
 	findScheduleReturns struct {
 		result1 martaapi.Schedule
@@ -24,15 +26,16 @@ type FakeScheduleFinder struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeScheduleFinder) FindSchedule() (martaapi.Schedule, error) {
+func (fake *FakeScheduleFinder) FindSchedule(arg1 context.Context) (martaapi.Schedule, error) {
 	fake.findScheduleMutex.Lock()
 	ret, specificReturn := fake.findScheduleReturnsOnCall[len(fake.findScheduleArgsForCall)]
 	fake.findScheduleArgsForCall = append(fake.findScheduleArgsForCall, struct {
-	}{})
-	fake.recordInvocation("FindSchedule", []interface{}{})
+		arg1 context.Context
+	}{arg1})
+	fake.recordInvocation("FindSchedule", []interface{}{arg1})
 	fake.findScheduleMutex.Unlock()
 	if fake.FindScheduleStub != nil {
-		return fake.FindScheduleStub()
+		return fake.FindScheduleStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -47,10 +50,17 @@ func (fake *FakeScheduleFinder) FindScheduleCallCount() int {
 	return len(fake.findScheduleArgsForCall)
 }
 
-func (fake *FakeScheduleFinder) FindScheduleCalls(stub func() (martaapi.Schedule, error)) {
+func (fake *FakeScheduleFinder) FindScheduleCalls(stub func(context.Context) (martaapi.Schedule, error)) {
 	fake.findScheduleMutex.Lock()
 	defer fake.findScheduleMutex.Unlock()
 	fake.FindScheduleStub = stub
+}
+
+func (fake *FakeScheduleFinder) FindScheduleArgsForCall(i int) context.Context {
+	fake.findScheduleMutex.RLock()
+	defer fake.findScheduleMutex.RUnlock()
+	argsForCall := fake.findScheduleArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeScheduleFinder) FindScheduleReturns(result1 martaapi.Schedule, result2 error) {
