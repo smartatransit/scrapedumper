@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ScheduleFinder
@@ -34,10 +36,11 @@ type Doer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-func New(doer Doer, apiKey string) Client {
+func New(doer Doer, apiKey string, logger *zap.Logger) Client {
 	return Client{
 		doer,
 		apiKey,
+		logger,
 	}
 }
 
@@ -45,6 +48,7 @@ func New(doer Doer, apiKey string) Client {
 type Client struct {
 	Doer   Doer
 	ApiKey string
+	logger *zap.Logger
 }
 
 func (c Client) buildRequest(method string, path string) (*http.Request, error) {

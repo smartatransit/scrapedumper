@@ -9,6 +9,7 @@ import (
 
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"go.uber.org/zap"
 )
 
 type WorkPoller interface {
@@ -20,13 +21,15 @@ type ScrapeAndDumpClient struct {
 	dumper         dumper.Dumper
 	scheduleFinder martaapi.ScheduleFinder
 	pollTime       time.Duration
+	logger         *zap.Logger
 }
 
-func New(dumper dumper.Dumper, api martaapi.ScheduleFinder, pollTime time.Duration) ScrapeAndDumpClient {
+func New(dumper dumper.Dumper, api martaapi.ScheduleFinder, pollTime time.Duration, logger *zap.Logger) ScrapeAndDumpClient {
 	return ScrapeAndDumpClient{
 		dumper,
 		api,
 		pollTime,
+		logger,
 	}
 }
 
@@ -36,7 +39,7 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 		for {
 			select {
 			case <-ctx.Done():
-				fmt.Println("exiting poll")
+				c.logger.Info("exiting poll")
 				return
 			default:
 			}
@@ -51,7 +54,7 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 }
 
 func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
-	fmt.Println("scrape and dumping")
+	c.logger.Info("scrape and dumping")
 	schedules, err := c.scheduleFinder.FindSchedules(ctx)
 	if err != nil {
 		return err

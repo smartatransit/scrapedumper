@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"go.uber.org/zap"
 
 	. "github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/martaapi/martaapifakes"
@@ -36,10 +37,13 @@ var _ = Describe("Client", func() {
 	})
 	JustBeforeEach(func() {
 		doer.DoReturns(resp, retErr)
-		client = Client{
-			Doer:   doer,
-			ApiKey: apiKey,
-		}
+		logger, _ := zap.NewProduction()
+		defer logger.Sync()
+		client = New(
+			doer,
+			apiKey,
+			logger,
+		)
 	})
 	Context("FindSchedules", func() {
 		JustBeforeEach(func() {

@@ -16,6 +16,7 @@ import (
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/worker"
 	"github.com/jessevdk/go-flags"
+	"go.uber.org/zap"
 )
 
 type options struct {
@@ -31,21 +32,24 @@ func main() {
 		log.Fatal(err)
 	}
 
+	logger, _ := zap.NewProduction()
+	defer logger.Sync() // flushes buffer, if any
+
 	awsSession := session.Must(session.NewSession())
 	client := s3.New(awsSession)
 	s3Manager := s3manager.NewUploaderWithClient(client)
 
 	httpClient := http.Client{}
 
-	martaClient := martaapi.New(&httpClient, opts.MartaAPIKey)
-	dump := dumper.New(s3Manager, opts.S3BucketName)
+	martaClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger)
+	dump := dumper.New(s3Manager, opts.S3BucketName, logger)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 
-	errC := make(chan error, 1)
+	poller := worker.New(dump, martaClient, 15*time.Second, logger)
 
-	poller := worker.New(dump, martaClient, 15*time.Second)
+	errC := make(chan error, 1)
 	poller.Poll(ctx, errC)
 
 	quit := make(chan os.Signal, 1)
@@ -53,12 +57,12 @@ func main() {
 
 	select {
 	case err := <-errC:
-		fmt.Println(err.Error())
-		fmt.Println("shutting down...")
+		logger.Error(err.Error())
+		logger.Info("shutting down...")
 	case <-quit:
 		cancelFunc()
-		fmt.Println("interrupt signal received")
-		fmt.Println("shutting down...")
+		logger.Info("interrupt signal received")
+		logger.Info("shutting down...")
 	}
 
 }
