@@ -65,7 +65,7 @@ func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 	}
 
 	r := bytes.NewReader(b)
-	err = c.dumper.Dump(ctx, r, time.Now().Format(time.RFC3339)+".json")
+	err = c.dumper.Dump(ctx, r, time.Now().UTC().Format(time.RFC3339)+".json")
 	if err != nil {
 		return err
 	}
