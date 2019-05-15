@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/bipol/scrapedumper/pkg/dumper"
@@ -64,7 +65,9 @@ func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 	}
 
 	r := bytes.NewReader(b)
-	err = c.dumper.Dump(ctx, r, time.Now().UTC().Format(time.RFC3339)+".json")
+	t := time.Now().UTC()
+	path := fmt.Sprintf("%d/%d/%d/%s.json", t.Year(), t.Month(), t.Day(), t.Format(time.RFC3339))
+	err = c.dumper.Dump(ctx, r, path)
 	if err != nil {
 		return err
 	}
