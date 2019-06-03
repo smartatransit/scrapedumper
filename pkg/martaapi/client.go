@@ -12,6 +12,7 @@ import (
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ScheduleFinder
 type ScheduleFinder interface {
 	FindSchedules(ctx context.Context) ([]Schedule, error)
+	Type() string
 }
 
 type Schedule struct {
@@ -29,6 +30,7 @@ type Schedule struct {
 const (
 	MartaBaseURI              = "http://developer.itsmarta.com"
 	RealtimeTrainTimeEndpoint = "/RealtimeTrain/RestServiceNextTrain/GetRealtimeArrivals"
+	BusEndpoint               = "/BRDRestService/RestBusRealTimeService/GetAllBus"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Doer
@@ -36,19 +38,25 @@ type Doer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-func New(doer Doer, apiKey string, logger *zap.Logger) Client {
+func New(doer Doer, apiKey string, logger *zap.Logger, endpoint string) Client {
 	return Client{
 		doer,
 		apiKey,
 		logger,
+		endpoint,
 	}
 }
 
 // Client will hold all of the deps required to find schedules
 type Client struct {
-	Doer   Doer
-	ApiKey string
-	logger *zap.Logger
+	Doer     Doer
+	ApiKey   string
+	logger   *zap.Logger
+	Endpoint string
+}
+
+func (c Client) Type() string {
+	return c.Endpoint
 }
 
 func (c Client) buildRequest(method string, path string) (*http.Request, error) {
@@ -69,7 +77,7 @@ func (c Client) FindSchedules(ctx context.Context) ([]Schedule, error) {
 		err       error
 	)
 
-	path := MartaBaseURI + RealtimeTrainTimeEndpoint
+	path := MartaBaseURI + c.Endpoint
 
 	req, err := c.buildRequest("GET", path)
 	if err != nil {
