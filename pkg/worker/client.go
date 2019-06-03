@@ -18,16 +18,16 @@ type WorkPoller interface {
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ScrapeAndDumpClient
 type ScrapeAndDumpClient struct {
-	dumper         dumper.Dumper
-	scheduleFinder martaapi.ScheduleFinder
-	pollTime       time.Duration
-	logger         *zap.Logger
+	dumper          dumper.Dumper
+	scheduleFinders []martaapi.ScheduleFinder
+	pollTime        time.Duration
+	logger          *zap.Logger
 }
 
-func New(dumper dumper.Dumper, api martaapi.ScheduleFinder, pollTime time.Duration, logger *zap.Logger) ScrapeAndDumpClient {
+func New(dumper dumper.Dumper, pollTime time.Duration, logger *zap.Logger, apis ...martaapi.ScheduleFinder) ScrapeAndDumpClient {
 	return ScrapeAndDumpClient{
 		dumper,
-		api,
+		apis,
 		pollTime,
 		logger,
 	}
@@ -55,21 +55,23 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 
 func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 	c.logger.Debug("scrape and dumping")
-	schedules, err := c.scheduleFinder.FindSchedules(ctx)
-	if err != nil {
-		return err
-	}
-	b, err := json.Marshal(schedules)
-	if err != nil {
-		return err
-	}
+	for _, finder := range c.scheduleFinders {
+		schedules, err := finder.FindSchedules(ctx)
+		if err != nil {
+			return err
+		}
+		b, err := json.Marshal(schedules)
+		if err != nil {
+			return err
+		}
 
-	r := bytes.NewReader(b)
-	t := time.Now().UTC()
-	path := fmt.Sprintf("%d/%d/%d/%s.json", t.Year(), t.Month(), t.Day(), t.Format(time.RFC3339))
-	err = c.dumper.Dump(ctx, r, path)
-	if err != nil {
-		return err
+		r := bytes.NewReader(b)
+		t := time.Now().UTC()
+		path := fmt.Sprintf("%s/%d/%d/%d/%s.json", finder.Type(), t.Year(), t.Month(), t.Day(), t.Format(time.RFC3339))
+		err = c.dumper.Dump(ctx, r, path)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

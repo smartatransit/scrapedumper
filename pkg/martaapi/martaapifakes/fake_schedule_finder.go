@@ -9,91 +9,155 @@ import (
 )
 
 type FakeScheduleFinder struct {
-	FindScheduleStub        func(context.Context) (martaapi.Schedule, error)
-	findScheduleMutex       sync.RWMutex
-	findScheduleArgsForCall []struct {
+	FindSchedulesStub        func(context.Context) ([]martaapi.Schedule, error)
+	findSchedulesMutex       sync.RWMutex
+	findSchedulesArgsForCall []struct {
 		arg1 context.Context
 	}
-	findScheduleReturns struct {
-		result1 martaapi.Schedule
+	findSchedulesReturns struct {
+		result1 []martaapi.Schedule
 		result2 error
 	}
-	findScheduleReturnsOnCall map[int]struct {
-		result1 martaapi.Schedule
+	findSchedulesReturnsOnCall map[int]struct {
+		result1 []martaapi.Schedule
 		result2 error
+	}
+	TypeStub        func() string
+	typeMutex       sync.RWMutex
+	typeArgsForCall []struct {
+	}
+	typeReturns struct {
+		result1 string
+	}
+	typeReturnsOnCall map[int]struct {
+		result1 string
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeScheduleFinder) FindSchedule(arg1 context.Context) (martaapi.Schedule, error) {
-	fake.findScheduleMutex.Lock()
-	ret, specificReturn := fake.findScheduleReturnsOnCall[len(fake.findScheduleArgsForCall)]
-	fake.findScheduleArgsForCall = append(fake.findScheduleArgsForCall, struct {
+func (fake *FakeScheduleFinder) FindSchedules(arg1 context.Context) ([]martaapi.Schedule, error) {
+	fake.findSchedulesMutex.Lock()
+	ret, specificReturn := fake.findSchedulesReturnsOnCall[len(fake.findSchedulesArgsForCall)]
+	fake.findSchedulesArgsForCall = append(fake.findSchedulesArgsForCall, struct {
 		arg1 context.Context
 	}{arg1})
-	fake.recordInvocation("FindSchedule", []interface{}{arg1})
-	fake.findScheduleMutex.Unlock()
-	if fake.FindScheduleStub != nil {
-		return fake.FindScheduleStub(arg1)
+	fake.recordInvocation("FindSchedules", []interface{}{arg1})
+	fake.findSchedulesMutex.Unlock()
+	if fake.FindSchedulesStub != nil {
+		return fake.FindSchedulesStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.findScheduleReturns
+	fakeReturns := fake.findSchedulesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeScheduleFinder) FindScheduleCallCount() int {
-	fake.findScheduleMutex.RLock()
-	defer fake.findScheduleMutex.RUnlock()
-	return len(fake.findScheduleArgsForCall)
+func (fake *FakeScheduleFinder) FindSchedulesCallCount() int {
+	fake.findSchedulesMutex.RLock()
+	defer fake.findSchedulesMutex.RUnlock()
+	return len(fake.findSchedulesArgsForCall)
 }
 
-func (fake *FakeScheduleFinder) FindScheduleCalls(stub func(context.Context) (martaapi.Schedule, error)) {
-	fake.findScheduleMutex.Lock()
-	defer fake.findScheduleMutex.Unlock()
-	fake.FindScheduleStub = stub
+func (fake *FakeScheduleFinder) FindSchedulesCalls(stub func(context.Context) ([]martaapi.Schedule, error)) {
+	fake.findSchedulesMutex.Lock()
+	defer fake.findSchedulesMutex.Unlock()
+	fake.FindSchedulesStub = stub
 }
 
-func (fake *FakeScheduleFinder) FindScheduleArgsForCall(i int) context.Context {
-	fake.findScheduleMutex.RLock()
-	defer fake.findScheduleMutex.RUnlock()
-	argsForCall := fake.findScheduleArgsForCall[i]
+func (fake *FakeScheduleFinder) FindSchedulesArgsForCall(i int) context.Context {
+	fake.findSchedulesMutex.RLock()
+	defer fake.findSchedulesMutex.RUnlock()
+	argsForCall := fake.findSchedulesArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeScheduleFinder) FindScheduleReturns(result1 martaapi.Schedule, result2 error) {
-	fake.findScheduleMutex.Lock()
-	defer fake.findScheduleMutex.Unlock()
-	fake.FindScheduleStub = nil
-	fake.findScheduleReturns = struct {
-		result1 martaapi.Schedule
+func (fake *FakeScheduleFinder) FindSchedulesReturns(result1 []martaapi.Schedule, result2 error) {
+	fake.findSchedulesMutex.Lock()
+	defer fake.findSchedulesMutex.Unlock()
+	fake.FindSchedulesStub = nil
+	fake.findSchedulesReturns = struct {
+		result1 []martaapi.Schedule
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeScheduleFinder) FindScheduleReturnsOnCall(i int, result1 martaapi.Schedule, result2 error) {
-	fake.findScheduleMutex.Lock()
-	defer fake.findScheduleMutex.Unlock()
-	fake.FindScheduleStub = nil
-	if fake.findScheduleReturnsOnCall == nil {
-		fake.findScheduleReturnsOnCall = make(map[int]struct {
-			result1 martaapi.Schedule
+func (fake *FakeScheduleFinder) FindSchedulesReturnsOnCall(i int, result1 []martaapi.Schedule, result2 error) {
+	fake.findSchedulesMutex.Lock()
+	defer fake.findSchedulesMutex.Unlock()
+	fake.FindSchedulesStub = nil
+	if fake.findSchedulesReturnsOnCall == nil {
+		fake.findSchedulesReturnsOnCall = make(map[int]struct {
+			result1 []martaapi.Schedule
 			result2 error
 		})
 	}
-	fake.findScheduleReturnsOnCall[i] = struct {
-		result1 martaapi.Schedule
+	fake.findSchedulesReturnsOnCall[i] = struct {
+		result1 []martaapi.Schedule
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeScheduleFinder) Type() string {
+	fake.typeMutex.Lock()
+	ret, specificReturn := fake.typeReturnsOnCall[len(fake.typeArgsForCall)]
+	fake.typeArgsForCall = append(fake.typeArgsForCall, struct {
+	}{})
+	fake.recordInvocation("Type", []interface{}{})
+	fake.typeMutex.Unlock()
+	if fake.TypeStub != nil {
+		return fake.TypeStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.typeReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeScheduleFinder) TypeCallCount() int {
+	fake.typeMutex.RLock()
+	defer fake.typeMutex.RUnlock()
+	return len(fake.typeArgsForCall)
+}
+
+func (fake *FakeScheduleFinder) TypeCalls(stub func() string) {
+	fake.typeMutex.Lock()
+	defer fake.typeMutex.Unlock()
+	fake.TypeStub = stub
+}
+
+func (fake *FakeScheduleFinder) TypeReturns(result1 string) {
+	fake.typeMutex.Lock()
+	defer fake.typeMutex.Unlock()
+	fake.TypeStub = nil
+	fake.typeReturns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeScheduleFinder) TypeReturnsOnCall(i int, result1 string) {
+	fake.typeMutex.Lock()
+	defer fake.typeMutex.Unlock()
+	fake.TypeStub = nil
+	if fake.typeReturnsOnCall == nil {
+		fake.typeReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.typeReturnsOnCall[i] = struct {
+		result1 string
+	}{result1}
 }
 
 func (fake *FakeScheduleFinder) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.findScheduleMutex.RLock()
-	defer fake.findScheduleMutex.RUnlock()
+	fake.findSchedulesMutex.RLock()
+	defer fake.findSchedulesMutex.RUnlock()
+	fake.typeMutex.RLock()
+	defer fake.typeMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

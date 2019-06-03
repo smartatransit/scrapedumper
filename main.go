@@ -42,14 +42,15 @@ func main() {
 
 	httpClient := http.Client{}
 
-	martaClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger)
+	trainClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.RealtimeTrainTimeEndpoint)
+	busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint)
 	dump := dumper.New(s3Manager, opts.S3BucketName, logger)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 
 	logger.Info(fmt.Sprintf("Poll time is %d seconds", opts.PollTimeInSeconds))
-	poller := worker.New(dump, martaClient, time.Duration(opts.PollTimeInSeconds)*time.Second, logger)
+	poller := worker.New(dump, time.Duration(opts.PollTimeInSeconds)*time.Second, logger, trainClient, busClient)
 
 	errC := make(chan error, 1)
 	quit := make(chan os.Signal, 1)
