@@ -43,6 +43,7 @@ var _ = Describe("Client", func() {
 			doer,
 			apiKey,
 			logger,
+			"test",
 		)
 	})
 	Context("FindSchedules", func() {
