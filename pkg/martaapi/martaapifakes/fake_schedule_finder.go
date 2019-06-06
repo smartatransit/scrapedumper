@@ -3,23 +3,24 @@ package martaapifakes
 
 import (
 	"context"
+	"io"
 	"sync"
 
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 )
 
 type FakeScheduleFinder struct {
-	FindSchedulesStub        func(context.Context) ([]martaapi.Schedule, error)
+	FindSchedulesStub        func(context.Context) (io.ReadCloser, error)
 	findSchedulesMutex       sync.RWMutex
 	findSchedulesArgsForCall []struct {
 		arg1 context.Context
 	}
 	findSchedulesReturns struct {
-		result1 []martaapi.Schedule
+		result1 io.ReadCloser
 		result2 error
 	}
 	findSchedulesReturnsOnCall map[int]struct {
-		result1 []martaapi.Schedule
+		result1 io.ReadCloser
 		result2 error
 	}
 	TypeStub        func() string
@@ -36,7 +37,7 @@ type FakeScheduleFinder struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeScheduleFinder) FindSchedules(arg1 context.Context) ([]martaapi.Schedule, error) {
+func (fake *FakeScheduleFinder) FindSchedules(arg1 context.Context) (io.ReadCloser, error) {
 	fake.findSchedulesMutex.Lock()
 	ret, specificReturn := fake.findSchedulesReturnsOnCall[len(fake.findSchedulesArgsForCall)]
 	fake.findSchedulesArgsForCall = append(fake.findSchedulesArgsForCall, struct {
@@ -60,7 +61,7 @@ func (fake *FakeScheduleFinder) FindSchedulesCallCount() int {
 	return len(fake.findSchedulesArgsForCall)
 }
 
-func (fake *FakeScheduleFinder) FindSchedulesCalls(stub func(context.Context) ([]martaapi.Schedule, error)) {
+func (fake *FakeScheduleFinder) FindSchedulesCalls(stub func(context.Context) (io.ReadCloser, error)) {
 	fake.findSchedulesMutex.Lock()
 	defer fake.findSchedulesMutex.Unlock()
 	fake.FindSchedulesStub = stub
@@ -73,28 +74,28 @@ func (fake *FakeScheduleFinder) FindSchedulesArgsForCall(i int) context.Context 
 	return argsForCall.arg1
 }
 
-func (fake *FakeScheduleFinder) FindSchedulesReturns(result1 []martaapi.Schedule, result2 error) {
+func (fake *FakeScheduleFinder) FindSchedulesReturns(result1 io.ReadCloser, result2 error) {
 	fake.findSchedulesMutex.Lock()
 	defer fake.findSchedulesMutex.Unlock()
 	fake.FindSchedulesStub = nil
 	fake.findSchedulesReturns = struct {
-		result1 []martaapi.Schedule
+		result1 io.ReadCloser
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeScheduleFinder) FindSchedulesReturnsOnCall(i int, result1 []martaapi.Schedule, result2 error) {
+func (fake *FakeScheduleFinder) FindSchedulesReturnsOnCall(i int, result1 io.ReadCloser, result2 error) {
 	fake.findSchedulesMutex.Lock()
 	defer fake.findSchedulesMutex.Unlock()
 	fake.FindSchedulesStub = nil
 	if fake.findSchedulesReturnsOnCall == nil {
 		fake.findSchedulesReturnsOnCall = make(map[int]struct {
-			result1 []martaapi.Schedule
+			result1 io.ReadCloser
 			result2 error
 		})
 	}
 	fake.findSchedulesReturnsOnCall[i] = struct {
-		result1 []martaapi.Schedule
+		result1 io.ReadCloser
 		result2 error
 	}{result1, result2}
 }

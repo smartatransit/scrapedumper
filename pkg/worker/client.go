@@ -1,9 +1,7 @@
 package worker
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -56,19 +54,14 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 	c.logger.Debug("scrape and dumping")
 	for _, finder := range c.scheduleFinders {
-		schedules, err := finder.FindSchedules(ctx)
+		reader, err := finder.FindSchedules(ctx)
 		if err != nil {
 			return err
 		}
-		b, err := json.Marshal(schedules)
-		if err != nil {
-			return err
-		}
-
-		r := bytes.NewReader(b)
+		defer reader.Close()
 		t := time.Now().UTC()
 		path := fmt.Sprintf("%s/%d/%d/%d/%s.json", finder.Type(), t.Year(), t.Month(), t.Day(), t.Format(time.RFC3339))
-		err = c.dumper.Dump(ctx, r, path)
+		err = c.dumper.Dump(ctx, reader, path)
 		if err != nil {
 			return err
 		}

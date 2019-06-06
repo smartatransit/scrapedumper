@@ -2,8 +2,7 @@ package martaapi
 
 import (
 	"context"
-	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -11,7 +10,7 @@ import (
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ScheduleFinder
 type ScheduleFinder interface {
-	FindSchedules(ctx context.Context) ([]Schedule, error)
+	FindSchedules(ctx context.Context) (io.ReadCloser, error)
 	Type() string
 }
 
@@ -71,33 +70,21 @@ func (c Client) buildRequest(method string, path string) (*http.Request, error) 
 }
 
 // FindSchedules will retrieve a set of schedules
-func (c Client) FindSchedules(ctx context.Context) ([]Schedule, error) {
+func (c Client) FindSchedules(ctx context.Context) (io.ReadCloser, error) {
 	var (
-		schedules []Schedule
-		err       error
+		err error
 	)
 
 	path := MartaBaseURI + c.Endpoint
 
 	req, err := c.buildRequest("GET", path)
 	if err != nil {
-		return schedules, err
+		return nil, err
 	}
 
 	resp, err := c.Doer.Do(req)
 	if err != nil {
-		return schedules, err
+		return nil, err
 	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return schedules, err
-	}
-
-	err = json.Unmarshal(body, &schedules)
-	if err != nil {
-		return schedules, err
-	}
-
-	return schedules, nil
+	return resp.Body, nil
 }
