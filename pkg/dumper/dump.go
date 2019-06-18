@@ -3,7 +3,6 @@ package dumper
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -13,11 +12,6 @@ import (
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Dumper
 type Dumper interface {
 	Dump(ctx context.Context, r io.Reader, path string) error
-}
-
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Uploader
-type Uploader interface {
-	Upload(input *s3manager.UploadInput, options ...func(*s3manager.Uploader)) (*s3manager.UploadOutput, error)
 }
 
 func New(path string, logger *zap.Logger) S3DumpClient {
@@ -36,17 +30,17 @@ func (c S3DumpClient) Dump(ctx context.Context, r io.Reader, path string) error 
 	location := filepath.Join(c.path, path)
 	dir := filepath.Dir(location)
 
-	err = os.MkdirAll(path, 644)
+	err := os.MkdirAll(dir, 644)
 	if err != nil {
 		return err
 	}
 
-	f, err := os.Open()
+	f, err := os.Open(location)
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.CopyAll(r, err)
+	_, err = io.Copy(f, r)
 	if err != nil {
 		return err
 	}

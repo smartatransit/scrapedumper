@@ -12,6 +12,7 @@ import (
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/worker"
+	"github.com/jessevdk/go-flags"
 	"go.uber.org/zap"
 )
 
