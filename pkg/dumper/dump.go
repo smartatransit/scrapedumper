@@ -3,9 +3,10 @@ package dumper
 import (
 	"context"
 	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"go.uber.org/zap"
 )
 
@@ -19,25 +20,36 @@ type Uploader interface {
 	Upload(input *s3manager.UploadInput, options ...func(*s3manager.Uploader)) (*s3manager.UploadOutput, error)
 }
 
-func New(uploader Uploader, bucket string, logger *zap.Logger) S3DumpClient {
+func New(path string, logger *zap.Logger) S3DumpClient {
 	return S3DumpClient{
-		uploader,
-		bucket,
-		logger,
+		path:   path,
+		logger: logger,
 	}
 }
 
 type S3DumpClient struct {
-	uploader Uploader
-	bucket   string
-	logger   *zap.Logger
+	path   string
+	logger *zap.Logger
 }
 
 func (c S3DumpClient) Dump(ctx context.Context, r io.Reader, path string) error {
-	_, err := c.uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(c.bucket),
-		Key:    aws.String(path),
-		Body:   r,
-	})
-	return err
+	location := filepath.Join(c.path, path)
+	dir := filepath.Dir(location)
+
+	err = os.MkdirAll(path, 644)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Open()
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.CopyAll(r, err)
+	if err != nil {
+		return err
+	}
+
+	return f.Close()
 }

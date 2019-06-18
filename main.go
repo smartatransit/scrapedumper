@@ -9,18 +9,14 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/worker"
-	"github.com/jessevdk/go-flags"
 	"go.uber.org/zap"
 )
 
 type options struct {
-	S3BucketName      string `long:"s3-bucket-name" env:"S3_BUCKET_NAME" description:"s3 bucket to dump stuff into" required:"true"`
+	OutputLocation    string `long:"output-location" env:"OUTPUT_LOCATION" description:"local path to output" required:"true"`
 	MartaAPIKey       string `long:"marta-api-key" env:"MARTA_API_KEY" description:"marta api key" required:"true"`
 	PollTimeInSeconds int    `long:"poll-time-in-seconds" env:"POLL_TIME_IN_SECONDS" description:"time to poll marta api every second" required:"true"`
 }
@@ -36,15 +32,11 @@ func main() {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync() // flushes buffer, if any
 
-	awsSession := session.Must(session.NewSession())
-	client := s3.New(awsSession)
-	s3Manager := s3manager.NewUploaderWithClient(client)
-
 	httpClient := http.Client{}
 
 	trainClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.RealtimeTrainTimeEndpoint)
 	busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint)
-	dump := dumper.New(s3Manager, opts.S3BucketName, logger)
+	dump := dumper.New(opts.OutputLocation, logger)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()

@@ -1,11 +1,11 @@
 module github.com/bipol/scrapedumper
 
 require (
-	github.com/aws/aws-sdk-go v1.19.28
+	github.com/aws/aws-sdk-go v1.19.28 // indirect
 	github.com/golang/protobuf v1.3.1 // indirect
-	github.com/jessevdk/go-flags v1.4.0
+	github.com/jessevdk/go-flags v1.4.0 // indirect
 	github.com/joho/godotenv v1.3.0 // indirect
-	github.com/maxbrunsfeld/counterfeiter/v6 v6.0.2 // indirect
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.0.2
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1 // indirect
