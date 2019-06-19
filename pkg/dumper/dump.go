@@ -28,12 +28,6 @@ type S3DumpClient struct {
 
 func (c S3DumpClient) Dump(ctx context.Context, r io.Reader, path string) error {
 	location := filepath.Join(c.path, path)
-	dir := filepath.Dir(location)
-
-	err := os.MkdirAll(dir, 644)
-	if err != nil {
-		return err
-	}
 
 	f, err := os.Create(location)
 	if err != nil {
