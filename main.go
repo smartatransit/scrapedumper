@@ -12,7 +12,6 @@ import (
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/worker"
-	"github.com/jessevdk/go-flags"
 	"go.uber.org/zap"
 )
 
@@ -35,8 +34,8 @@ func main() {
 
 	httpClient := http.Client{}
 
-	trainClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.RealtimeTrainTimeEndpoint)
-	busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint)
+	trainClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.RealtimeTrainTimeEndpoint, "train-data")
+	busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint, "bus-data")
 	dump := dumper.New(opts.OutputLocation, logger)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -51,14 +50,15 @@ func main() {
 
 	poller.Poll(ctx, errC)
 
-	select {
-	case err := <-errC:
-		logger.Error(err.Error())
-		logger.Info("shutting down...")
-	case <-quit:
-		cancelFunc()
-		logger.Info("interrupt signal received")
-		logger.Info("shutting down...")
+	for {
+		select {
+		case err := <-errC:
+			logger.Error(err.Error())
+		case <-quit:
+			cancelFunc()
+			logger.Info("interrupt signal received")
+			logger.Info("shutting down...")
+			break
+		}
 	}
-
 }

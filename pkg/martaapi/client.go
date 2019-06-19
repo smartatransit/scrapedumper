@@ -37,29 +37,31 @@ type Doer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-func New(doer Doer, apiKey string, logger *zap.Logger, endpoint string) Client {
+func New(doer Doer, apiKey string, logger *zap.Logger, endpoint string, prefix string) Client {
 	return Client{
 		doer,
 		apiKey,
 		logger,
 		endpoint,
+		prefix,
 	}
 }
 
 // Client will hold all of the deps required to find schedules
 type Client struct {
-	Doer     Doer
-	ApiKey   string
-	logger   *zap.Logger
-	Endpoint string
+	Doer         Doer
+	ApiKey       string
+	logger       *zap.Logger
+	Endpoint     string
+	OutputPrefix string
 }
 
-func (c Client) Type() string {
-	return c.Endpoint
+func (c Client) OutputPrefix() string {
+	return c.OutputPrefix()
 }
 
-func (c Client) buildRequest(method string, path string) (*http.Request, error) {
-	req, err := http.NewRequest(method, path, nil)
+func (c Client) buildRequest(method string, filename string) (*http.Request, error) {
+	req, err := http.NewRequest(method, filename, nil)
 	if err != nil {
 		return req, err
 	}
