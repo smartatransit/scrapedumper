@@ -44,7 +44,6 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 			err := c.scrapeAndDump(ctx)
 			if err != nil {
 				errC <- err
-				return
 			}
 			time.Sleep(c.pollTime)
 		}
@@ -60,7 +59,7 @@ func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 		}
 		defer reader.Close()
 		t := time.Now().UTC()
-		path := fmt.Sprintf("%s/%d/%d/%d/%s.json", finder.Type(), t.Year(), t.Month(), t.Day(), t.Format(time.RFC3339))
+		path := fmt.Sprintf("%s.json", t.Format(time.RFC3339))
 		err = c.dumper.Dump(ctx, reader, path)
 		if err != nil {
 			return err
