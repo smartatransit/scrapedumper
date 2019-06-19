@@ -61,7 +61,7 @@ func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 		}
 		defer reader.Close()
 		t := time.Now().UTC()
-		path := fmt.Sprintf("%s/%d/%d/%d/%s.json", finder.Type(), t.Year(), t.Month(), t.Day(), t.Format(time.RFC3339))
+		path := fmt.Sprintf("%s/%s.json", finder.Prefix(), t.Format(time.RFC3339))
 		err = c.dumper.Dump(ctx, reader, path)
 		if err != nil {
 			return err
