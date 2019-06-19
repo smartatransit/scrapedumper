@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
 	"time"
 
 	"github.com/bipol/scrapedumper/pkg/dumper"
@@ -45,8 +43,6 @@ func main() {
 	poller := worker.New(dump, time.Duration(opts.PollTimeInSeconds)*time.Second, logger, trainClient, busClient)
 
 	errC := make(chan error, 1)
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
 
 	poller.Poll(ctx, errC)
 
