@@ -35,7 +35,7 @@ func (c S3DumpClient) Dump(ctx context.Context, r io.Reader, path string) error 
 		return err
 	}
 
-	f, err := os.Open(location)
+	f, err := os.Create(location)
 	if err != nil {
 		return err
 	}

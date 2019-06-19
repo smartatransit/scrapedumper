@@ -11,7 +11,7 @@ import (
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ScheduleFinder
 type ScheduleFinder interface {
 	FindSchedules(ctx context.Context) (io.ReadCloser, error)
-	Type() string
+	Prefix() string
 }
 
 type Schedule struct {
@@ -56,8 +56,8 @@ type Client struct {
 	OutputPrefix string
 }
 
-func (c Client) OutputPrefix() string {
-	return c.OutputPrefix()
+func (c Client) Prefix() string {
+	return c.OutputPrefix
 }
 
 func (c Client) buildRequest(method string, filename string) (*http.Request, error) {
