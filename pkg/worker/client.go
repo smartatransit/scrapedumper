@@ -45,7 +45,6 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 			err := c.scrapeAndDump(ctx)
 			if err != nil {
 				errC <- err
-				return
 			}
 			time.Sleep(c.pollTime)
 		}
