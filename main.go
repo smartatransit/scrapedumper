@@ -50,15 +50,7 @@ func main() {
 
 	poller.Poll(ctx, errC)
 
-	for {
-		select {
-		case err := <-errC:
-			logger.Error(err.Error())
-		case <-quit:
-			cancelFunc()
-			logger.Info("interrupt signal received")
-			logger.Info("shutting down...")
-			break
-		}
+	for err := range errC {
+		logger.Error(err.Error())
 	}
 }
