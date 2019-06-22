@@ -16,12 +16,13 @@ import (
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/worker"
 	"github.com/jessevdk/go-flags"
+	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
 
 type options struct {
-	OutputLocation    string `long:"output-location" env:"OUTPUT_LOCATION" description:"local path to output" required:"true"`
-	S3BucketName      string `long:"s3-bucket-name" env:"S3_BUCKET_NAME" description:"s3 bucket to dump stuff into" required:"true"`
+	OutputLocation    string `long:"output-location" env:"OUTPUT_LOCATION" description:"local path to output"`
+	S3BucketName      string `long:"s3-bucket-name" env:"S3_BUCKET_NAME" description:"s3 bucket to dump stuff into"`
 	MartaAPIKey       string `long:"marta-api-key" env:"MARTA_API_KEY" description:"marta api key" required:"true"`
 	PollTimeInSeconds int    `long:"poll-time-in-seconds" env:"POLL_TIME_IN_SECONDS" description:"time to poll marta api every second" required:"true"`
 }
@@ -43,9 +44,25 @@ func main() {
 
 	httpClient := http.Client{}
 
-	trainClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.RealtimeTrainTimeEndpoint)
-	busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint)
-	dump := dumper.New(s3Manager, opts.S3BucketName, logger)
+	trainClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.RealtimeTrainTimeEndpoint, "train-data")
+	busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint, "bus-data")
+
+	var dumpClients []dumper.Dumper
+	if opts.S3BucketName != "" {
+		s3Dump := dumper.NewS3DumpClient(s3Manager, opts.S3BucketName, logger)
+		dumpClients = append(dumpClients, s3Dump)
+	}
+	if opts.OutputLocation != "" {
+		localDump := dumper.NewLocalDumpClient(opts.OutputLocation, logger, afero.NewOsFs())
+		dumpClients = append(dumpClients, localDump)
+	}
+
+	if len(dumpClients) == 0 {
+		logger.Error("must specify a dump client")
+		return
+	}
+
+	dump := dumper.NewRoundRobinDumpClient(logger, dumpClients...)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()

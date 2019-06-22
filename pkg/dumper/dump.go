@@ -1,10 +1,13 @@
 package dumper
 
 import (
+	"bytes"
 	"context"
 	"io"
-	"os"
+	"io/ioutil"
 	"path/filepath"
+
+	"github.com/spf13/afero"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -21,15 +24,51 @@ type Uploader interface {
 	Upload(input *s3manager.UploadInput, options ...func(*s3manager.Uploader)) (*s3manager.UploadOutput, error)
 }
 
+type RoundRobinDumpClient struct {
+	logger  *zap.Logger
+	clients []Dumper
+}
+
+func NewRoundRobinDumpClient(logger *zap.Logger, clients ...Dumper) RoundRobinDumpClient {
+	return RoundRobinDumpClient{
+		logger,
+		clients,
+	}
+}
+
+func (c RoundRobinDumpClient) Dump(ctx context.Context, r io.Reader, path string) error {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	for _, client := range c.clients {
+		br := bytes.NewReader(b)
+		err := client.Dump(ctx, br, path)
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}
+
 type LocalDumpClient struct {
 	path   string
 	logger *zap.Logger
+	fs     afero.Fs
+}
+
+func NewLocalDumpClient(path string, logger *zap.Logger, fs afero.Fs) LocalDumpClient {
+	return LocalDumpClient{
+		path,
+		logger,
+		fs,
+	}
 }
 
 func (c LocalDumpClient) Dump(ctx context.Context, r io.Reader, path string) error {
 	location := filepath.Join(c.path, path)
 
-	f, err := os.Create(location)
+	f, err := c.fs.Create(location)
 	if err != nil {
 		return err
 	}
