@@ -49,11 +49,11 @@ func main() {
 
 	var dumpClients []dumper.Dumper
 	if opts.S3BucketName != "" {
-		s3Dump := dumper.NewS3DumpClient(s3Manager, opts.S3BucketName, logger)
+		s3Dump := dumper.NewS3DumpHandler(s3Manager, opts.S3BucketName, logger)
 		dumpClients = append(dumpClients, s3Dump)
 	}
 	if opts.OutputLocation != "" {
-		localDump := dumper.NewLocalDumpClient(opts.OutputLocation, logger, afero.NewOsFs())
+		localDump := dumper.NewLocalDumpHandler(opts.OutputLocation, logger, afero.NewOsFs())
 		dumpClients = append(dumpClients, localDump)
 	}
 

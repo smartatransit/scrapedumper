@@ -54,7 +54,7 @@ var _ = Describe("Dump", func() {
 			})
 		})
 	})
-	Context("S3DumpClient", func() {
+	Context("S3DumpHandler", func() {
 		var (
 			uploader *dumperfakes.FakeUploader
 			logger   *zap.Logger
@@ -69,7 +69,7 @@ var _ = Describe("Dump", func() {
 			err = nil
 		})
 		JustBeforeEach(func() {
-			client = dumper.NewS3DumpClient(uploader, "bucket", logger)
+			client = dumper.NewS3DumpHandler(uploader, "bucket", logger)
 			err = client.Dump(context.Background(), r, "some path")
 		})
 		When("it dumps", func() {
@@ -85,7 +85,7 @@ var _ = Describe("Dump", func() {
 			})
 		})
 	})
-	Context("LocalDumpClient", func() {
+	Context("LocalDumpHandler", func() {
 		var (
 			fs     afero.Fs
 			logger *zap.Logger
@@ -100,7 +100,7 @@ var _ = Describe("Dump", func() {
 			err = nil
 		})
 		JustBeforeEach(func() {
-			client = dumper.NewLocalDumpClient("path", logger, fs)
+			client = dumper.NewLocalDumpHandler("path", logger, fs)
 			err = client.Dump(context.Background(), r, "somepath")
 		})
 		When("it dumps", func() {

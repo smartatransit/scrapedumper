@@ -54,21 +54,21 @@ func (c RoundRobinDumpClient) Dump(ctx context.Context, r io.Reader, path string
 	return err
 }
 
-type LocalDumpClient struct {
+type LocalDumpHandler struct {
 	path   string
 	logger *zap.Logger
 	fs     afero.Fs
 }
 
-func NewLocalDumpClient(path string, logger *zap.Logger, fs afero.Fs) LocalDumpClient {
-	return LocalDumpClient{
+func NewLocalDumpHandler(path string, logger *zap.Logger, fs afero.Fs) LocalDumpHandler {
+	return LocalDumpHandler{
 		path,
 		logger,
 		fs,
 	}
 }
 
-func (c LocalDumpClient) Dump(ctx context.Context, r io.Reader, path string) error {
+func (c LocalDumpHandler) Dump(ctx context.Context, r io.Reader, path string) error {
 	c.logger.Debug(fmt.Sprintf("Local dump to %s", path))
 	location := filepath.Join(c.path, path)
 
@@ -85,21 +85,21 @@ func (c LocalDumpClient) Dump(ctx context.Context, r io.Reader, path string) err
 	return f.Close()
 }
 
-func NewS3DumpClient(uploader Uploader, bucket string, logger *zap.Logger) S3DumpClient {
-	return S3DumpClient{
+func NewS3DumpHandler(uploader Uploader, bucket string, logger *zap.Logger) S3DumpHandler {
+	return S3DumpHandler{
 		uploader,
 		bucket,
 		logger,
 	}
 }
 
-type S3DumpClient struct {
+type S3DumpHandler struct {
 	uploader Uploader
 	bucket   string
 	logger   *zap.Logger
 }
 
-func (c S3DumpClient) Dump(ctx context.Context, r io.Reader, path string) error {
+func (c S3DumpHandler) Dump(ctx context.Context, r io.Reader, path string) error {
 	c.logger.Debug(fmt.Sprintf("S3 dump to bucket %s, path %s", c.bucket, path))
 	_, err := c.uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(c.bucket),
