@@ -20,6 +20,7 @@ import (
 )
 
 type options struct {
+	OutputLocation    string `long:"output-location" env:"OUTPUT_LOCATION" description:"local path to output" required:"true"`
 	S3BucketName      string `long:"s3-bucket-name" env:"S3_BUCKET_NAME" description:"s3 bucket to dump stuff into" required:"true"`
 	MartaAPIKey       string `long:"marta-api-key" env:"MARTA_API_KEY" description:"marta api key" required:"true"`
 	PollTimeInSeconds int    `long:"poll-time-in-seconds" env:"POLL_TIME_IN_SECONDS" description:"time to poll marta api every second" required:"true"`

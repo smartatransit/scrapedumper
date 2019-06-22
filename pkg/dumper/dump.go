@@ -3,6 +3,8 @@ package dumper
 import (
 	"context"
 	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -19,7 +21,28 @@ type Uploader interface {
 	Upload(input *s3manager.UploadInput, options ...func(*s3manager.Uploader)) (*s3manager.UploadOutput, error)
 }
 
-func New(uploader Uploader, bucket string, logger *zap.Logger) S3DumpClient {
+type LocalDumpClient struct {
+	path   string
+	logger *zap.Logger
+}
+
+func (c LocalDumpClient) Dump(ctx context.Context, r io.Reader, path string) error {
+	location := filepath.Join(c.path, path)
+
+	f, err := os.Create(location)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(f, r)
+	if err != nil {
+		return err
+	}
+
+	return f.Close()
+}
+
+func NewS3DumpClient(uploader Uploader, bucket string, logger *zap.Logger) S3DumpClient {
 	return S3DumpClient{
 		uploader,
 		bucket,
