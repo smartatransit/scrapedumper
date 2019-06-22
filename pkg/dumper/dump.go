@@ -3,6 +3,7 @@ package dumper
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"path/filepath"
@@ -66,6 +67,7 @@ func NewLocalDumpClient(path string, logger *zap.Logger, fs afero.Fs) LocalDumpC
 }
 
 func (c LocalDumpClient) Dump(ctx context.Context, r io.Reader, path string) error {
+	c.logger.Debug(fmt.Sprintf("Local dump to %s", path))
 	location := filepath.Join(c.path, path)
 
 	f, err := c.fs.Create(location)
@@ -96,6 +98,7 @@ type S3DumpClient struct {
 }
 
 func (c S3DumpClient) Dump(ctx context.Context, r io.Reader, path string) error {
+	c.logger.Debug(fmt.Sprintf("S3 dump to bucket %s, path %s", c.bucket, path))
 	_, err := c.uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(c.bucket),
 		Key:    aws.String(path),
