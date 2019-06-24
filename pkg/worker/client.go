@@ -14,15 +14,19 @@ type WorkPoller interface {
 	Poll(ctx context.Context, errC chan error) error
 }
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ScrapeAndDumpClient
 type ScrapeAndDumpClient struct {
-	workList WorkList
+	workList WorkGetter
 	pollTime time.Duration
 	logger   *zap.Logger
 }
 
 func NewWorkList() *WorkList {
 	return &WorkList{}
+}
+
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . WorkGetter
+type WorkGetter interface {
+	GetWork() []ScrapeDump
 }
 
 func (w *WorkList) AddWork(sched martaapi.ScheduleFinder, dump dumper.Dumper) *WorkList {
@@ -43,7 +47,7 @@ type ScrapeDump struct {
 	Dumper  dumper.Dumper
 }
 
-func New(pollTime time.Duration, logger *zap.Logger, workList WorkList) ScrapeAndDumpClient {
+func New(pollTime time.Duration, logger *zap.Logger, workList WorkGetter) ScrapeAndDumpClient {
 	return ScrapeAndDumpClient{
 		workList,
 		pollTime,

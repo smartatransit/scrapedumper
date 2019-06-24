@@ -48,8 +48,6 @@ func main() {
 	httpClient := http.Client{}
 
 	trainClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.RealtimeTrainTimeEndpoint, "train-data")
-
-	//unfortunately, the dynamo dymp handler's marshal func does not currently account for bus client stuff.. this needs to be fixed
 	busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint, "bus-data")
 
 	var trainDumps []dumper.Dumper
