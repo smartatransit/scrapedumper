@@ -27,11 +27,13 @@ type Uploader interface {
 	Upload(input *s3manager.UploadInput, options ...func(*s3manager.Uploader)) (*s3manager.UploadOutput, error)
 }
 
+// RoundRobinDumpClient reads the scrape into disk, and then dumps that result into each dumper synchronously
 type RoundRobinDumpClient struct {
 	logger  *zap.Logger
 	clients []Dumper
 }
 
+// NewRoundRobinDumpClient instantiates a new RoundRobin client
 func NewRoundRobinDumpClient(logger *zap.Logger, clients ...Dumper) RoundRobinDumpClient {
 	return RoundRobinDumpClient{
 		logger,
@@ -56,12 +58,14 @@ func (c RoundRobinDumpClient) Dump(ctx context.Context, r io.Reader, path string
 	return err
 }
 
+// LocalDumpHandler will write a scrape to the local file sysem
 type LocalDumpHandler struct {
 	path   string
 	logger *zap.Logger
 	fs     afero.Fs
 }
 
+// NewLocalDumpHandler instantiates a new local dump handler
 func NewLocalDumpHandler(path string, logger *zap.Logger, fs afero.Fs) LocalDumpHandler {
 	return LocalDumpHandler{
 		path,
@@ -87,6 +91,7 @@ func (c LocalDumpHandler) Dump(ctx context.Context, r io.Reader, path string) er
 	return f.Close()
 }
 
+// NewS3DumpHandler instantiates a new S3 dump handler
 func NewS3DumpHandler(uploader Uploader, bucket string, logger *zap.Logger) S3DumpHandler {
 	return S3DumpHandler{
 		uploader,
@@ -95,6 +100,7 @@ func NewS3DumpHandler(uploader Uploader, bucket string, logger *zap.Logger) S3Du
 	}
 }
 
+// S3DumpHandler will write a scrape to an s3 bucket
 type S3DumpHandler struct {
 	uploader Uploader
 	bucket   string
@@ -123,6 +129,8 @@ func NoOpMarshaller(r io.Reader, s string) ([]*dynamodb.BatchWriteItemInput, err
 
 type DynamoMarshalFunc = func(io.Reader, string) ([]*dynamodb.BatchWriteItemInput, error)
 
+// DynamoDumpHandler will write a scrape into dynamo
+// a DynamoMarshalFunc is required, which will transform the io.Reader into a BatchWriteItemInput
 type DynamoDumpHandler struct {
 	table       string
 	logger      *zap.Logger
@@ -130,6 +138,8 @@ type DynamoDumpHandler struct {
 	marshalFunc DynamoMarshalFunc
 }
 
+// NewDynamoDumpHandler instantiates a new dynamo dump handler
+//a marshal func must be provided, which will transform the io.Reader provided into BatchWriteItems
 func NewDynamoDumpHandler(logger *zap.Logger, table string, dyn DynamoPuter, marshalFunc DynamoMarshalFunc) DynamoDumpHandler {
 	return DynamoDumpHandler{
 		table,

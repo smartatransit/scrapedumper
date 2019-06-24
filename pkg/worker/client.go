@@ -14,6 +14,7 @@ type WorkPoller interface {
 	Poll(ctx context.Context, errC chan error) error
 }
 
+// ScrapeAndDumpClient contains all of the assets required to obtain scrape data from client, and write them to dump sites
 type ScrapeAndDumpClient struct {
 	workList WorkGetter
 	pollTime time.Duration
@@ -38,10 +39,13 @@ func (w *WorkList) GetWork() []ScrapeDump {
 	return w.work
 }
 
+// WorkList is a way to build up units of work (ScrapeDump work) in a way that allows us to pair a scrape with a dump
+// this gives a user more freedom in what data gets dumped where
 type WorkList struct {
 	work []ScrapeDump
 }
 
+// ScrapeDump is a pairing of a client (scraper) and a dumper.
 type ScrapeDump struct {
 	Scraper martaapi.ScheduleFinder
 	Dumper  dumper.Dumper
