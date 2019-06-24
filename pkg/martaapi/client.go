@@ -25,6 +25,7 @@ type Schedule struct {
 	TrainID        string `json:"TRAIN_ID"`
 	WaitingSeconds string `json:"WAITING_SECONDS"`
 	WaitingTime    string `json:"WAITING_TIME"`
+	TTL            int64  `json:"TTL"`
 }
 
 const (

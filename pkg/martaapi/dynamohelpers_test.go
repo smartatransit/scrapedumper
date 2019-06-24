@@ -2,7 +2,9 @@ package martaapi_test
 
 import (
 	"io"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -103,6 +105,10 @@ var _ = Describe("Dynamohelpers", func() {
 		When("given a valid schedule", func() {
 			It("returns valid fields on the write request", func() {
 				item := wr.PutRequest.Item
+				ttl := item["TTL"].N
+				i, err := strconv.ParseInt(*ttl, 10, 64)
+				Expect(err).To(BeNil())
+				Expect(time.Unix(i, 0)).To(BeTemporally("~", time.Now().Add(30*24*time.Hour), time.Hour))
 				Expect(item).To(MatchKeys(IgnoreExtras, Keys{
 					"STATION":         PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("station"))})),
 					"WAITING_SECONDS": PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("-10"))})),

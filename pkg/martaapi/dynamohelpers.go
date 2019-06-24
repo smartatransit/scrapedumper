@@ -16,6 +16,7 @@ func ScheduleToWriteRequest(s Schedule, t string) (*dynamodb.WriteRequest, error
 		return nil, err
 	}
 	s.PrimaryKey = fmt.Sprintf("%s_%s_%s", s.Station, s.Destination, date.Format("2006-01-02"))
+	s.TTL = time.Now().Add(30 * 24 * time.Hour).Unix()
 	attr, err := dynamodbattribute.MarshalMap(s)
 	if err != nil {
 		return nil, err
