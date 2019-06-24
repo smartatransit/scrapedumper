@@ -15,6 +15,7 @@ type ScheduleFinder interface {
 }
 
 type Schedule struct {
+	PrimaryKey     string
 	Destination    string `json:"DESTINATION"`
 	Direction      string `json:"DIRECTION"`
 	EventTime      string `json:"EVENT_TIME"`

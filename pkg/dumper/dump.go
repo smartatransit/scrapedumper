@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"go.uber.org/zap"
 )
@@ -106,5 +108,42 @@ func (c S3DumpHandler) Dump(ctx context.Context, r io.Reader, path string) error
 		Key:    aws.String(path),
 		Body:   r,
 	})
+	return err
+}
+
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . DynamoPuter
+type DynamoPuter interface {
+	BatchWriteItemWithContext(ctx aws.Context, input *dynamodb.BatchWriteItemInput, opts ...request.Option) (*dynamodb.BatchWriteItemOutput, error)
+}
+
+func NoOpMarshaller(r io.Reader) (*dynamodb.BatchWriteItemInput, error) {
+	return nil, nil
+}
+
+type DynamoMarshalFunc = func(io.Reader) (*dynamodb.BatchWriteItemInput, error)
+
+type DynamoDumpHandler struct {
+	table       string
+	logger      *zap.Logger
+	dyn         DynamoPuter
+	marshalFunc DynamoMarshalFunc
+}
+
+func NewDynamoDumpHandler(logger *zap.Logger, table string, dyn DynamoPuter, marshalFunc DynamoMarshalFunc) DynamoDumpHandler {
+	return DynamoDumpHandler{
+		table,
+		logger,
+		dyn,
+		marshalFunc,
+	}
+}
+
+func (c DynamoDumpHandler) Dump(ctx context.Context, r io.Reader, path string) error {
+	c.logger.Debug(fmt.Sprintf("Dynamo dump to table %s", c.table))
+	inp, err := c.marshalFunc(r)
+	if err != nil {
+		return err
+	}
+	_, err = c.dyn.BatchWriteItemWithContext(ctx, inp)
 	return err
 }

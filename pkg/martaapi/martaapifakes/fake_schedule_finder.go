@@ -23,14 +23,14 @@ type FakeScheduleFinder struct {
 		result1 io.ReadCloser
 		result2 error
 	}
-	TypeStub        func() string
-	typeMutex       sync.RWMutex
-	typeArgsForCall []struct {
+	PrefixStub        func() string
+	prefixMutex       sync.RWMutex
+	prefixArgsForCall []struct {
 	}
-	typeReturns struct {
+	prefixReturns struct {
 		result1 string
 	}
-	typeReturnsOnCall map[int]struct {
+	prefixReturnsOnCall map[int]struct {
 		result1 string
 	}
 	invocations      map[string][][]interface{}
@@ -100,54 +100,54 @@ func (fake *FakeScheduleFinder) FindSchedulesReturnsOnCall(i int, result1 io.Rea
 	}{result1, result2}
 }
 
-func (fake *FakeScheduleFinder) Type() string {
-	fake.typeMutex.Lock()
-	ret, specificReturn := fake.typeReturnsOnCall[len(fake.typeArgsForCall)]
-	fake.typeArgsForCall = append(fake.typeArgsForCall, struct {
+func (fake *FakeScheduleFinder) Prefix() string {
+	fake.prefixMutex.Lock()
+	ret, specificReturn := fake.prefixReturnsOnCall[len(fake.prefixArgsForCall)]
+	fake.prefixArgsForCall = append(fake.prefixArgsForCall, struct {
 	}{})
-	fake.recordInvocation("Type", []interface{}{})
-	fake.typeMutex.Unlock()
-	if fake.TypeStub != nil {
-		return fake.TypeStub()
+	fake.recordInvocation("Prefix", []interface{}{})
+	fake.prefixMutex.Unlock()
+	if fake.PrefixStub != nil {
+		return fake.PrefixStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.typeReturns
+	fakeReturns := fake.prefixReturns
 	return fakeReturns.result1
 }
 
-func (fake *FakeScheduleFinder) TypeCallCount() int {
-	fake.typeMutex.RLock()
-	defer fake.typeMutex.RUnlock()
-	return len(fake.typeArgsForCall)
+func (fake *FakeScheduleFinder) PrefixCallCount() int {
+	fake.prefixMutex.RLock()
+	defer fake.prefixMutex.RUnlock()
+	return len(fake.prefixArgsForCall)
 }
 
-func (fake *FakeScheduleFinder) TypeCalls(stub func() string) {
-	fake.typeMutex.Lock()
-	defer fake.typeMutex.Unlock()
-	fake.TypeStub = stub
+func (fake *FakeScheduleFinder) PrefixCalls(stub func() string) {
+	fake.prefixMutex.Lock()
+	defer fake.prefixMutex.Unlock()
+	fake.PrefixStub = stub
 }
 
-func (fake *FakeScheduleFinder) TypeReturns(result1 string) {
-	fake.typeMutex.Lock()
-	defer fake.typeMutex.Unlock()
-	fake.TypeStub = nil
-	fake.typeReturns = struct {
+func (fake *FakeScheduleFinder) PrefixReturns(result1 string) {
+	fake.prefixMutex.Lock()
+	defer fake.prefixMutex.Unlock()
+	fake.PrefixStub = nil
+	fake.prefixReturns = struct {
 		result1 string
 	}{result1}
 }
 
-func (fake *FakeScheduleFinder) TypeReturnsOnCall(i int, result1 string) {
-	fake.typeMutex.Lock()
-	defer fake.typeMutex.Unlock()
-	fake.TypeStub = nil
-	if fake.typeReturnsOnCall == nil {
-		fake.typeReturnsOnCall = make(map[int]struct {
+func (fake *FakeScheduleFinder) PrefixReturnsOnCall(i int, result1 string) {
+	fake.prefixMutex.Lock()
+	defer fake.prefixMutex.Unlock()
+	fake.PrefixStub = nil
+	if fake.prefixReturnsOnCall == nil {
+		fake.prefixReturnsOnCall = make(map[int]struct {
 			result1 string
 		})
 	}
-	fake.typeReturnsOnCall[i] = struct {
+	fake.prefixReturnsOnCall[i] = struct {
 		result1 string
 	}{result1}
 }
@@ -157,8 +157,8 @@ func (fake *FakeScheduleFinder) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.findSchedulesMutex.RLock()
 	defer fake.findSchedulesMutex.RUnlock()
-	fake.typeMutex.RLock()
-	defer fake.typeMutex.RUnlock()
+	fake.prefixMutex.RLock()
+	defer fake.prefixMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
