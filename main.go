@@ -75,7 +75,7 @@ func main() {
 	defer cancelFunc()
 
 	logger.Info(fmt.Sprintf("Poll time is %d seconds", opts.PollTimeInSeconds))
-	poller := worker.New(dump, time.Duration(opts.PollTimeInSeconds)*time.Second, logger, trainClient, busClient)
+	poller := worker.New(dump, time.Duration(opts.PollTimeInSeconds)*time.Second, logger, trainClient)
 
 	errC := make(chan error, 1)
 	quit := make(chan os.Signal, 1)
