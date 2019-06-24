@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
-func ScheduleToWriteRequest(s Schedule) (*dynamodb.WriteRequest, error) {
+func ScheduleToWriteRequest(s Schedule, t string) (*dynamodb.WriteRequest, error) {
 	date, err := time.Parse("1/02/2006 3:04:05 PM", s.EventTime)
 	if err != nil {
 		return nil, err
@@ -27,13 +27,9 @@ func ScheduleToWriteRequest(s Schedule) (*dynamodb.WriteRequest, error) {
 	}, nil
 }
 
-const (
-	PutRequestKey = "PutRequest"
-)
-
-func DigestScheduleResponse(r io.Reader) (*dynamodb.BatchWriteItemInput, error) {
+func DigestScheduleResponse(r io.Reader, t string) ([]*dynamodb.BatchWriteItemInput, error) {
 	var (
-		inp dynamodb.BatchWriteItemInput
+		inp []*dynamodb.BatchWriteItemInput
 	)
 	requestItems := make(map[string][]*dynamodb.WriteRequest)
 
@@ -46,22 +42,29 @@ func DigestScheduleResponse(r io.Reader) (*dynamodb.BatchWriteItemInput, error) 
 	}
 
 	for dec.More() {
+		if len(requestItems[t]) == 25 {
+			inp = append(inp, &dynamodb.BatchWriteItemInput{RequestItems: requestItems})
+			requestItems = make(map[string][]*dynamodb.WriteRequest)
+		}
+
 		var s Schedule
 		err = dec.Decode(&s)
 		if err != nil {
 			return nil, err
 		}
-		wr, err := ScheduleToWriteRequest(s)
+		wr, err := ScheduleToWriteRequest(s, t)
 		if err != nil {
 			return nil, err
 		}
-		requestItems[PutRequestKey] = append(requestItems[PutRequestKey], wr)
+		requestItems[t] = append(requestItems[t], wr)
 	}
+
+	inp = append(inp, &dynamodb.BatchWriteItemInput{RequestItems: requestItems})
 
 	_, err = dec.Token()
 	if err != nil {
 		return nil, err
 	}
 
-	return inp.SetRequestItems(requestItems), err
+	return inp, err
 }

@@ -48,18 +48,23 @@ func main() {
 	httpClient := http.Client{}
 
 	trainClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.RealtimeTrainTimeEndpoint, "train-data")
-	busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint, "bus-data")
+
+	//unfortunately, the dynamo dymp handler's marshal func does not currently account for bus client stuff.. this needs to be fixed
+	//busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint, "bus-data")
 
 	var dumpClients []dumper.Dumper
 	if opts.S3BucketName != "" {
+		logger.Info(fmt.Sprintf("activating s3 dumper %s", opts.S3BucketName))
 		s3Dump := dumper.NewS3DumpHandler(s3Manager, opts.S3BucketName, logger)
 		dumpClients = append(dumpClients, s3Dump)
 	}
 	if opts.OutputLocation != "" {
+		logger.Info(fmt.Sprintf("activating local dumper %s", opts.OutputLocation))
 		localDump := dumper.NewLocalDumpHandler(opts.OutputLocation, logger, afero.NewOsFs())
 		dumpClients = append(dumpClients, localDump)
 	}
 	if opts.DynamoTableName != "" {
+		logger.Info(fmt.Sprintf("activating dynamo dumper %s", opts.DynamoTableName))
 		dynamoDump := dumper.NewDynamoDumpHandler(logger, opts.DynamoTableName, svc, martaapi.DigestScheduleResponse)
 		dumpClients = append(dumpClients, dynamoDump)
 	}

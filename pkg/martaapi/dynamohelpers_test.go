@@ -17,7 +17,7 @@ import (
 var _ = Describe("Dynamohelpers", func() {
 	Context("DigestScheduleResponse", func() {
 		var (
-			batchInput *dynamodb.BatchWriteItemInput
+			batchInput []*dynamodb.BatchWriteItemInput
 			err        error
 			r          io.Reader
 		)
@@ -27,7 +27,7 @@ var _ = Describe("Dynamohelpers", func() {
 			r = strings.NewReader(ValidScheduleJSON)
 		})
 		JustBeforeEach(func() {
-			batchInput, err = martaapi.DigestScheduleResponse(r)
+			batchInput, err = martaapi.DigestScheduleResponse(r, "t")
 		})
 		When("given an invalid response", func() {
 			BeforeEach(func() {
@@ -42,8 +42,8 @@ var _ = Describe("Dynamohelpers", func() {
 				Expect(err).To(BeNil())
 			})
 			It("returns correct request item", func() {
-				Expect(len(batchInput.RequestItems[martaapi.PutRequestKey])).To(Equal(2))
-				Expect(batchInput.RequestItems[martaapi.PutRequestKey][0].PutRequest.Item).To(MatchKeys(IgnoreExtras, Keys{
+				Expect(len(batchInput[0].RequestItems["t"])).To(Equal(2))
+				Expect(batchInput[0].RequestItems["t"][0].PutRequest.Item).To(MatchKeys(IgnoreExtras, Keys{
 					"STATION":         PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("LAKEWOOD STATION"))})),
 					"WAITING_SECONDS": PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("-16"))})),
 					"WAITING_TIME":    PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("Boarding"))})),
@@ -54,7 +54,7 @@ var _ = Describe("Dynamohelpers", func() {
 					"DESTINATION":     PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("Doraville"))})),
 					"DIRECTION":       PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("N"))})),
 				}))
-				Expect(batchInput.RequestItems[martaapi.PutRequestKey][1].PutRequest.Item).To(MatchKeys(IgnoreExtras, Keys{
+				Expect(batchInput[0].RequestItems["t"][1].PutRequest.Item).To(MatchKeys(IgnoreExtras, Keys{
 					"STATION":         PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("KENSINGTON STATION"))})),
 					"WAITING_SECONDS": PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("-4"))})),
 					"WAITING_TIME":    PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("Boarding"))})),
@@ -90,7 +90,7 @@ var _ = Describe("Dynamohelpers", func() {
 			wr = nil
 		})
 		JustBeforeEach(func() {
-			wr, err = martaapi.ScheduleToWriteRequest(s)
+			wr, err = martaapi.ScheduleToWriteRequest(s, "table")
 		})
 		When("given an invalid eventtime", func() {
 			BeforeEach(func() {

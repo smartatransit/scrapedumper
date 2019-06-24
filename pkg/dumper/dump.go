@@ -116,11 +116,12 @@ type DynamoPuter interface {
 	BatchWriteItemWithContext(ctx aws.Context, input *dynamodb.BatchWriteItemInput, opts ...request.Option) (*dynamodb.BatchWriteItemOutput, error)
 }
 
-func NoOpMarshaller(r io.Reader) (*dynamodb.BatchWriteItemInput, error) {
-	return nil, nil
+func NoOpMarshaller(r io.Reader, s string) ([]*dynamodb.BatchWriteItemInput, error) {
+	x := make([]*dynamodb.BatchWriteItemInput, 1)
+	return x, nil
 }
 
-type DynamoMarshalFunc = func(io.Reader) (*dynamodb.BatchWriteItemInput, error)
+type DynamoMarshalFunc = func(io.Reader, string) ([]*dynamodb.BatchWriteItemInput, error)
 
 type DynamoDumpHandler struct {
 	table       string
@@ -140,10 +141,15 @@ func NewDynamoDumpHandler(logger *zap.Logger, table string, dyn DynamoPuter, mar
 
 func (c DynamoDumpHandler) Dump(ctx context.Context, r io.Reader, path string) error {
 	c.logger.Debug(fmt.Sprintf("Dynamo dump to table %s", c.table))
-	inp, err := c.marshalFunc(r)
+	inps, err := c.marshalFunc(r, c.table)
 	if err != nil {
 		return err
 	}
-	_, err = c.dyn.BatchWriteItemWithContext(ctx, inp)
-	return err
+	for _, i := range inps {
+		_, err = c.dyn.BatchWriteItemWithContext(ctx, i)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
