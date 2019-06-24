@@ -50,37 +50,39 @@ func main() {
 	trainClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.RealtimeTrainTimeEndpoint, "train-data")
 
 	//unfortunately, the dynamo dymp handler's marshal func does not currently account for bus client stuff.. this needs to be fixed
-	//busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint, "bus-data")
+	busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint, "bus-data")
 
-	var dumpClients []dumper.Dumper
+	var trainDumps []dumper.Dumper
+	var busDumps []dumper.Dumper
 	if opts.S3BucketName != "" {
 		logger.Info(fmt.Sprintf("activating s3 dumper %s", opts.S3BucketName))
 		s3Dump := dumper.NewS3DumpHandler(s3Manager, opts.S3BucketName, logger)
-		dumpClients = append(dumpClients, s3Dump)
+		trainDumps = append(trainDumps, s3Dump)
+		busDumps = append(busDumps, s3Dump)
 	}
 	if opts.OutputLocation != "" {
 		logger.Info(fmt.Sprintf("activating local dumper %s", opts.OutputLocation))
 		localDump := dumper.NewLocalDumpHandler(opts.OutputLocation, logger, afero.NewOsFs())
-		dumpClients = append(dumpClients, localDump)
+		trainDumps = append(trainDumps, localDump)
+		busDumps = append(busDumps, localDump)
 	}
 	if opts.DynamoTableName != "" {
 		logger.Info(fmt.Sprintf("activating dynamo dumper %s", opts.DynamoTableName))
 		dynamoDump := dumper.NewDynamoDumpHandler(logger, opts.DynamoTableName, svc, martaapi.DigestScheduleResponse)
-		dumpClients = append(dumpClients, dynamoDump)
+		trainDumps = append(trainDumps, dynamoDump)
 	}
 
-	if len(dumpClients) == 0 {
-		logger.Error("must specify a dump client")
-		return
-	}
+	trainRoundRobinDumper := dumper.NewRoundRobinDumpClient(logger, trainDumps...)
+	busRoundRobinDumper := dumper.NewRoundRobinDumpClient(logger, busDumps...)
 
-	dump := dumper.NewRoundRobinDumpClient(logger, dumpClients...)
+	var workList worker.WorkList
+	workList.AddWork(trainClient, trainRoundRobinDumper).AddWork(busClient, busRoundRobinDumper)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 
 	logger.Info(fmt.Sprintf("Poll time is %d seconds", opts.PollTimeInSeconds))
-	poller := worker.New(dump, time.Duration(opts.PollTimeInSeconds)*time.Second, logger, trainClient)
+	poller := worker.New(time.Duration(opts.PollTimeInSeconds)*time.Second, logger, workList)
 
 	errC := make(chan error, 1)
 	quit := make(chan os.Signal, 1)

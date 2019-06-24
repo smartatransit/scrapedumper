@@ -16,16 +16,36 @@ type WorkPoller interface {
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ScrapeAndDumpClient
 type ScrapeAndDumpClient struct {
-	dumper          dumper.Dumper
-	scheduleFinders []martaapi.ScheduleFinder
-	pollTime        time.Duration
-	logger          *zap.Logger
+	workList WorkList
+	pollTime time.Duration
+	logger   *zap.Logger
 }
 
-func New(dumper dumper.Dumper, pollTime time.Duration, logger *zap.Logger, apis ...martaapi.ScheduleFinder) ScrapeAndDumpClient {
+func NewWorkList() *WorkList {
+	return &WorkList{}
+}
+
+func (w *WorkList) AddWork(sched martaapi.ScheduleFinder, dump dumper.Dumper) *WorkList {
+	w.work = append(w.work, ScrapeDump{sched, dump})
+	return w
+}
+
+func (w *WorkList) GetWork() []ScrapeDump {
+	return w.work
+}
+
+type WorkList struct {
+	work []ScrapeDump
+}
+
+type ScrapeDump struct {
+	Scraper martaapi.ScheduleFinder
+	Dumper  dumper.Dumper
+}
+
+func New(pollTime time.Duration, logger *zap.Logger, workList WorkList) ScrapeAndDumpClient {
 	return ScrapeAndDumpClient{
-		dumper,
-		apis,
+		workList,
 		pollTime,
 		logger,
 	}
@@ -54,15 +74,15 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 
 func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 	c.logger.Debug("scrape and dumping")
-	for _, finder := range c.scheduleFinders {
-		reader, err := finder.FindSchedules(ctx)
+	for _, sd := range c.workList.GetWork() {
+		reader, err := sd.Scraper.FindSchedules(ctx)
 		if err != nil {
 			return err
 		}
 		defer reader.Close()
 		t := time.Now().UTC()
-		path := fmt.Sprintf("%s/%s.json", finder.Prefix(), t.Format(time.RFC3339))
-		err = c.dumper.Dump(ctx, reader, path)
+		path := fmt.Sprintf("%s/%s.json", sd.Scraper.Prefix(), t.Format(time.RFC3339))
+		err = sd.Dumper.Dump(ctx, reader, path)
 		if err != nil {
 			return err
 		}

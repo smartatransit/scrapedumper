@@ -18,6 +18,7 @@ Implementing this interface should allow an extensible way to `Dump` data wherev
 - [X] Allow upload to `S3`
 - [X] Allow upload to `Dynamo`
 - [ ] Allow multiclient response handling for `Dynamo` handler
+- [ ] Use a `Scraper` interface instead of a coupling marta client to it
 
 ## Running
 
