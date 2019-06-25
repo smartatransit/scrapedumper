@@ -80,7 +80,7 @@ func main() {
 	defer cancelFunc()
 
 	logger.Info(fmt.Sprintf("Poll time is %d seconds", opts.PollTimeInSeconds))
-	poller := worker.New(time.Duration(opts.PollTimeInSeconds)*time.Second, logger, workList)
+	poller := worker.New(time.Duration(opts.PollTimeInSeconds)*time.Second, logger, &workList)
 
 	errC := make(chan error, 1)
 	quit := make(chan os.Signal, 1)

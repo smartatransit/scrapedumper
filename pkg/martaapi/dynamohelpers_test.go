@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 
 	"github.com/bipol/scrapedumper/pkg/martaapi"
-	. "github.com/bipol/scrapedumper/pkg/martaapi"
 )
 
 var _ = Describe("Dynamohelpers", func() {
@@ -26,7 +25,7 @@ var _ = Describe("Dynamohelpers", func() {
 		BeforeEach(func() {
 			err = nil
 			batchInput = nil
-			r = strings.NewReader(ValidScheduleJSON)
+			r = strings.NewReader(martaapi.ValidScheduleJSON)
 		})
 		JustBeforeEach(func() {
 			batchInput, err = martaapi.DigestScheduleResponse(r, "t")
@@ -72,13 +71,13 @@ var _ = Describe("Dynamohelpers", func() {
 	})
 	Context("ScheduleToWriteRequest", func() {
 		var (
-			s   Schedule
+			s   martaapi.Schedule
 			wr  *dynamodb.WriteRequest
 			err error
 		)
 		BeforeEach(func() {
 			err = nil
-			s = Schedule{
+			s = martaapi.Schedule{
 				Destination:    "destination",
 				Direction:      "direction",
 				EventTime:      "5/14/2019 5:50:52 PM",
