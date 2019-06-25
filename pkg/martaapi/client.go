@@ -15,6 +15,7 @@ type ScheduleFinder interface {
 }
 
 type Schedule struct {
+	PrimaryKey     string
 	Destination    string `json:"DESTINATION"`
 	Direction      string `json:"DIRECTION"`
 	EventTime      string `json:"EVENT_TIME"`
@@ -24,6 +25,7 @@ type Schedule struct {
 	TrainID        string `json:"TRAIN_ID"`
 	WaitingSeconds string `json:"WAITING_SECONDS"`
 	WaitingTime    string `json:"WAITING_TIME"`
+	TTL            int64  `json:"TTL"`
 }
 
 const (
