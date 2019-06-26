@@ -72,8 +72,7 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 			}
 			err := c.scrapeAndDump(ctx)
 			if err != nil {
-				errC <- err
-				return
+				c.logger.Error(err.Error())
 			}
 			time.Sleep(c.pollTime)
 		}
@@ -86,7 +85,7 @@ func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 		reader, err := sd.Scraper.FindSchedules(ctx)
 		if err != nil {
 			c.logger.Error(err.Error())
-			continue
+			return err
 		}
 		defer reader.Close()
 		t := time.Now().UTC()
@@ -94,6 +93,7 @@ func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 		err = sd.Dumper.Dump(ctx, reader, path)
 		if err != nil {
 			c.logger.Error(err.Error())
+			return err
 		}
 	}
 	return nil
