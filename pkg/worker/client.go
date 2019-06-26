@@ -84,7 +84,6 @@ func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 	for _, sd := range c.workList.GetWork() {
 		reader, err := sd.Scraper.FindSchedules(ctx)
 		if err != nil {
-			c.logger.Error(err.Error())
 			return err
 		}
 		defer reader.Close()
@@ -92,7 +91,6 @@ func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 		path := fmt.Sprintf("%s/%s.json", sd.Scraper.Prefix(), t.Format(time.RFC3339))
 		err = sd.Dumper.Dump(ctx, reader, path)
 		if err != nil {
-			c.logger.Error(err.Error())
 			return err
 		}
 	}
