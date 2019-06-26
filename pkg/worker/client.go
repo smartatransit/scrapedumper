@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bipol/scrapedumper/pkg/circuitbreaker"
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"go.uber.org/zap"
@@ -19,6 +20,7 @@ type ScrapeAndDumpClient struct {
 	workList WorkGetter
 	pollTime time.Duration
 	logger   *zap.Logger
+	cb       *circuitbreaker.CircuitBreaker
 }
 
 func NewWorkList() *WorkList {
@@ -52,10 +54,12 @@ type ScrapeDump struct {
 }
 
 func New(pollTime time.Duration, logger *zap.Logger, workList WorkGetter) ScrapeAndDumpClient {
+	cb := circuitbreaker.New(logger, 10*time.Minute, 10)
 	return ScrapeAndDumpClient{
 		workList,
 		pollTime,
 		logger,
+		cb,
 	}
 }
 
@@ -70,8 +74,8 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 				return
 			default:
 			}
-			err := c.scrapeAndDump(ctx)
-			if err != nil {
+			err := c.cb.Run(func() error { return c.scrapeAndDump(ctx) })
+			if err != nil && err == circuitbreaker.ErrSystemFailure {
 				errC <- err
 				return
 			}
