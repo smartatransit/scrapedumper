@@ -19,6 +19,8 @@ Implementing this interface should allow an extensible way to `Dump` data wherev
 - [X] Allow upload to `Dynamo`
 - [X] Allow multiclient response handling for `Dynamo` handler
 - [ ] Use a `Scraper` interface instead of a coupling marta client to it
+- [ ] `circuitbreaker` in the worker?
+- [ ] backoff, jitter, retryer on dynamo client
 
 ## Running
 
