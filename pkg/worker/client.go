@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bipol/scrapedumper/pkg/circuitbreaker"
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"go.uber.org/zap"
@@ -19,6 +20,7 @@ type ScrapeAndDumpClient struct {
 	workList WorkGetter
 	pollTime time.Duration
 	logger   *zap.Logger
+	cb       *circuitbreaker.CircuitBreaker
 }
 
 func NewWorkList() *WorkList {
@@ -51,12 +53,29 @@ type ScrapeDump struct {
 	Dumper  dumper.Dumper
 }
 
-func New(pollTime time.Duration, logger *zap.Logger, workList WorkGetter) ScrapeAndDumpClient {
-	return ScrapeAndDumpClient{
-		workList,
-		pollTime,
-		logger,
+type Option = func(*ScrapeAndDumpClient)
+
+func WithCircuitBreaker(c *circuitbreaker.CircuitBreaker) func(*ScrapeAndDumpClient) {
+	return func(x *ScrapeAndDumpClient) {
+		x.cb = c
 	}
+}
+
+// New will initialize a new ScrapeDumper client, and if not provided with a circuit breaker, will fail immediately on the first error
+//is is adviced to provide a circuitbreaker to manage this logic if you would rather this not occur
+func New(pollTime time.Duration, logger *zap.Logger, workList WorkGetter, opts ...Option) ScrapeAndDumpClient {
+	sc := ScrapeAndDumpClient{
+		workList: workList,
+		pollTime: pollTime,
+		logger:   logger,
+	}
+	if opts != nil {
+		for _, opt := range opts {
+			opt(&sc)
+		}
+	}
+
+	return sc
 }
 
 func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
@@ -70,9 +89,19 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 				return
 			default:
 			}
-			err := c.scrapeAndDump(ctx)
-			if err != nil {
-				c.logger.Error(err.Error())
+			var err error
+			if c.cb != nil {
+				err = c.cb.Run(func() error { return c.scrapeAndDump(ctx) })
+				if err != nil && err == circuitbreaker.ErrSystemFailure {
+					errC <- err
+					return
+				}
+			} else {
+				err := c.scrapeAndDump(ctx)
+				if err != nil {
+					errC <- err
+					return
+				}
 			}
 			time.Sleep(c.pollTime)
 		}
