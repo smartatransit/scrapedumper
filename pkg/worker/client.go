@@ -61,6 +61,8 @@ func WithCircuitBreaker(c *circuitbreaker.CircuitBreaker) func(*ScrapeAndDumpCli
 	}
 }
 
+// New will initialize a new ScrapeDumper client, and if not provided with a circuit breaker, will fail immediately on the first error
+//is is adviced to provide a circuitbreaker to manage this logic if you would rather this not occur
 func New(pollTime time.Duration, logger *zap.Logger, workList WorkGetter, opts ...Option) ScrapeAndDumpClient {
 	sc := ScrapeAndDumpClient{
 		workList: workList,

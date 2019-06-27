@@ -46,7 +46,9 @@ func (r *BooleanRollingWindow) All(x bool) bool {
 }
 
 var (
-	ErrOpenCircuit   = errors.New("circuit is open")
+	//ErrOpenCircuit is an error returned when the circuit is opened
+	ErrOpenCircuit = errors.New("circuit is open")
+	//ErrSystemFailure is returned when a half open state exceeds the error window
 	ErrSystemFailure = errors.New("poor recovery - half open state reverted back to failure")
 )
 
@@ -58,6 +60,9 @@ type CircuitBreaker struct {
 	logger   *zap.Logger
 }
 
+// New will initialize a new circuit breaker, which will "OPEN" whenever it reaches the window val
+//after being opened, we will wait until the waitTime has expired before going into a "HALFOPEN" state, allowing whatever service we are hitting to recover.
+//if we get enough successful requests at this point to be the window size, we'll go back to an "OPEN" state
 func New(logger *zap.Logger, waitTime time.Duration, window int) *CircuitBreaker {
 	return &CircuitBreaker{
 		state:    Closed,
@@ -67,6 +72,8 @@ func New(logger *zap.Logger, waitTime time.Duration, window int) *CircuitBreaker
 	}
 }
 
+// Run will run a given function, and record if there is an error.  It will control its state
+//based on values given in the New function
 func (c *CircuitBreaker) Run(cmd func() error) error {
 	if c.state == Open {
 		// If enough time has passed, go to a safety state

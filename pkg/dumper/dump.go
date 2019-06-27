@@ -158,6 +158,7 @@ func (c DynamoDumpHandler) Dump(ctx context.Context, r io.Reader, path string) e
 	for _, i := range inps {
 		_, err = c.dyn.BatchWriteItemWithContext(ctx, i)
 		if err != nil {
+			c.logger.Error(fmt.Sprintf("%+v", i.RequestItems))
 			return err
 		}
 	}
