@@ -95,7 +95,7 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 					return
 				}
 			} else {
-				err = c.scrapeAndDump(ctx)
+				err := c.scrapeAndDump(ctx)
 				if err != nil {
 					errC <- err
 					return
