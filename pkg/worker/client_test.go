@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
 
+	"github.com/bipol/scrapedumper/pkg/circuitbreaker"
 	"github.com/bipol/scrapedumper/pkg/dumper/dumperfakes"
 	"github.com/bipol/scrapedumper/pkg/martaapi/martaapifakes"
 	"github.com/bipol/scrapedumper/pkg/worker"
@@ -43,16 +44,18 @@ var _ = Describe("Client", func() {
 			logger   *zap.Logger
 			s        worker.ScrapeAndDumpClient
 			ctx      context.Context
+			opts     []worker.Option
 		)
 		BeforeEach(func() {
 			ctx = context.Background()
 			workList = &workerfakes.FakeWorkGetter{}
 			logger = zap.NewNop()
 			pollTime = 500 * time.Millisecond
+			opts = []worker.Option{}
 		})
 		JustBeforeEach(func() {
 			errC := make(chan error, 1)
-			s = worker.New(pollTime, logger, workList)
+			s = worker.New(pollTime, logger, workList, opts...)
 			s.Poll(ctx, errC)
 		})
 		When("context is cancelled", func() {
@@ -65,6 +68,25 @@ var _ = Describe("Client", func() {
 			It("does not call work", func() {
 				Expect(workList.GetWorkCallCount()).To(BeZero())
 			})
+		})
+		When("with a circuit breaker", func() {
+			var (
+				sc *martaapifakes.FakeScheduleFinder
+				d  *dumperfakes.FakeDumper
+			)
+			BeforeEach(func() {
+				sc = &martaapifakes.FakeScheduleFinder{}
+				d = &dumperfakes.FakeDumper{}
+				sc.FindSchedulesReturns(ioutil.NopCloser(strings.NewReader("")), nil)
+				workList.GetWorkReturns([]ScrapeDump{ScrapeDump{Scraper: sc, Dumper: d}})
+				cb := circuitbreaker.New(logger, 1*time.Hour, 10)
+				opts = append(opts, worker.WithCircuitBreaker(cb))
+			})
+			It("scrapes and dumps", func() {
+				Eventually(func() int { return sc.FindSchedulesCallCount() }).Should(BeNumerically(">=", 1))
+				Eventually(func() int { return d.DumpCallCount() }).Should(BeNumerically(">=", 1))
+			})
+
 		})
 		When("given work", func() {
 			var (

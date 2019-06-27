@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/bipol/scrapedumper/pkg/circuitbreaker"
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/worker"
@@ -79,8 +80,10 @@ func main() {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 
+	cb := circuitbreaker.New(logger, 1*time.Hour, 10)
+
 	logger.Info(fmt.Sprintf("Poll time is %d seconds", opts.PollTimeInSeconds))
-	poller := worker.New(time.Duration(opts.PollTimeInSeconds)*time.Second, logger, &workList)
+	poller := worker.New(time.Duration(opts.PollTimeInSeconds)*time.Second, logger, &workList, worker.WithCircuitBreaker(cb))
 
 	errC := make(chan error, 1)
 	quit := make(chan os.Signal, 1)

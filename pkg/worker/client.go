@@ -53,14 +53,27 @@ type ScrapeDump struct {
 	Dumper  dumper.Dumper
 }
 
-func New(pollTime time.Duration, logger *zap.Logger, workList WorkGetter) ScrapeAndDumpClient {
-	cb := circuitbreaker.New(logger, 10*time.Minute, 10)
-	return ScrapeAndDumpClient{
-		workList,
-		pollTime,
-		logger,
-		cb,
+type Option = func(*ScrapeAndDumpClient)
+
+func WithCircuitBreaker(c *circuitbreaker.CircuitBreaker) func(*ScrapeAndDumpClient) {
+	return func(x *ScrapeAndDumpClient) {
+		x.cb = c
 	}
+}
+
+func New(pollTime time.Duration, logger *zap.Logger, workList WorkGetter, opts ...Option) ScrapeAndDumpClient {
+	sc := ScrapeAndDumpClient{
+		workList: workList,
+		pollTime: pollTime,
+		logger:   logger,
+	}
+	if opts != nil {
+		for _, opt := range opts {
+			opt(&sc)
+		}
+	}
+
+	return sc
 }
 
 func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
@@ -74,10 +87,19 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 				return
 			default:
 			}
-			err := c.cb.Run(func() error { return c.scrapeAndDump(ctx) })
-			if err != nil && err == circuitbreaker.ErrSystemFailure {
-				errC <- err
-				return
+			var err error
+			if c.cb != nil {
+				err = c.cb.Run(func() error { return c.scrapeAndDump(ctx) })
+				if err != nil && err == circuitbreaker.ErrSystemFailure {
+					errC <- err
+					return
+				}
+			} else {
+				err = c.scrapeAndDump(ctx)
+				if err != nil {
+					errC <- err
+					return
+				}
 			}
 			time.Sleep(c.pollTime)
 		}
