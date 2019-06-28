@@ -86,6 +86,7 @@ func (c *CircuitBreaker) Run(cmd func() error) error {
 
 	err := cmd()
 	if err != nil {
+		c.logger.Error(err.Error())
 		c.window.Add(true)
 		// if we have exceeded our error threshold, open the circuit
 		if c.window.All(true) {
