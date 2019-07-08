@@ -109,6 +109,7 @@ var _ = Describe("Dynamohelpers", func() {
 				Expect(err).To(BeNil())
 				Expect(time.Unix(i, 0)).To(BeTemporally("~", time.Now().Add(30*24*time.Hour), time.Hour))
 				Expect(item).To(MatchKeys(IgnoreExtras, Keys{
+					"SortKey":         PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("2019-05-14T17:50:52Z_train_id"))})),
 					"STATION":         PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("station"))})),
 					"WAITING_SECONDS": PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("-10"))})),
 					"WAITING_TIME":    PointTo(MatchFields(IgnoreExtras, Fields{"S": Equal(aws.String("Boarding"))})),
