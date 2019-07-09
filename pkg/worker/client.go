@@ -8,6 +8,7 @@ import (
 	"github.com/bipol/scrapedumper/pkg/circuitbreaker"
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -92,7 +93,7 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 			var err error
 			if c.cb != nil {
 				err = c.cb.Run(func() error { return c.scrapeAndDump(ctx) })
-				if err != nil && err == circuitbreaker.ErrSystemFailure {
+				if err != nil && errors.Cause(err) == circuitbreaker.ErrSystemFailure {
 					errC <- err
 					return
 				}
