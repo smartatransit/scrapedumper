@@ -93,6 +93,7 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 			if c.cb != nil {
 				err = c.cb.Run(func() error { return c.scrapeAndDump(ctx) })
 				if err != nil && err == circuitbreaker.ErrSystemFailure {
+					c.logger.Error(err.Error())
 					errC <- err
 					return
 				}
