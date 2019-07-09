@@ -1,8 +1,9 @@
 package circuitbreaker
 
 import (
-	"errors"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"go.uber.org/zap"
 )
@@ -91,7 +92,7 @@ func (c *CircuitBreaker) Run(cmd func() error) error {
 		if c.window.All(true) {
 			// if we are at half open, we are in a system failure state
 			if c.state == HalfOpen {
-				return ErrSystemFailure
+				return errors.Wrap(ErrSystemFailure, err.Error())
 			}
 			c.state = Open
 			c.openedAt = time.Now()
