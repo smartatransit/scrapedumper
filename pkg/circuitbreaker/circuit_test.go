@@ -1,8 +1,9 @@
 package circuitbreaker_test
 
 import (
-	"errors"
 	"time"
+
+	"github.com/pkg/errors"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -35,7 +36,7 @@ var _ = Describe("Circuit", func() {
 					}
 				})
 				It("returns an open circuit error", func() {
-					Expect(err).To(MatchError(ErrSystemFailure))
+					Expect(errors.Cause(err)).To(MatchError(ErrSystemFailure))
 				})
 			})
 			When("we fail window size", func() {
