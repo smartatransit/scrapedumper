@@ -39,7 +39,9 @@ func main() {
 	}
 
 	logger, _ := zap.NewProduction()
-	defer logger.Sync() // flushes buffer, if any
+	defer func() {
+		_ = logger.Sync() // flushes buffer, if any
+	}()
 
 	awsSession := session.Must(session.NewSession())
 	client := s3.New(awsSession)

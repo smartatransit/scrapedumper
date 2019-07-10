@@ -70,10 +70,8 @@ func New(pollTime time.Duration, logger *zap.Logger, workList WorkGetter, opts .
 		pollTime: pollTime,
 		logger:   logger,
 	}
-	if opts != nil {
-		for _, opt := range opts {
-			opt(&sc)
-		}
+	for _, opt := range opts {
+		opt(&sc)
 	}
 
 	return sc

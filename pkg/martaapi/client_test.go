@@ -28,13 +28,15 @@ var _ = Describe("Client", func() {
 		}
 		doer = new(martaapifakes.FakeDoer)
 		apiKey = "apikey"
-		err = nil
 		retErr = nil
+		err = nil
 	})
 	JustBeforeEach(func() {
 		doer.DoReturns(resp, retErr)
 		logger, _ := zap.NewProduction()
-		defer logger.Sync()
+		defer func() {
+			_ = logger.Sync()
+		}()
 		client = New(
 			doer,
 			apiKey,
