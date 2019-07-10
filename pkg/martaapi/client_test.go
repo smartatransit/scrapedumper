@@ -20,6 +20,7 @@ var _ = Describe("Client", func() {
 		client Client
 		resp   *http.Response
 		retErr error
+		err    error
 	)
 	BeforeEach(func() {
 		resp = &http.Response{
@@ -28,6 +29,7 @@ var _ = Describe("Client", func() {
 		doer = new(martaapifakes.FakeDoer)
 		apiKey = "apikey"
 		retErr = nil
+		err = nil
 	})
 	JustBeforeEach(func() {
 		doer.DoReturns(resp, retErr)
