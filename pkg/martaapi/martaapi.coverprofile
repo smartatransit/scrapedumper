@@ -1,15 +1,11 @@
 mode: atomic
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:41.80,48.2 1 2
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:58.31,60.2 1 0
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:62.81,64.16 2 2
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:67.2,70.17 4 2
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:64.16,66.3 1 0
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:74.77,83.16 4 2
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:87.2,88.16 2 2
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:91.2,93.16 3 2
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:97.2,98.16 2 2
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:102.2,102.18 1 2
+github.com/bipol/scrapedumper/pkg/martaapi/client.go:40.95,48.2 1 1
+github.com/bipol/scrapedumper/pkg/martaapi/client.go:59.33,61.2 1 0
+github.com/bipol/scrapedumper/pkg/martaapi/client.go:63.81,65.16 2 0
+github.com/bipol/scrapedumper/pkg/martaapi/client.go:68.2,71.17 4 0
+github.com/bipol/scrapedumper/pkg/martaapi/client.go:65.16,67.3 1 0
+github.com/bipol/scrapedumper/pkg/martaapi/client.go:75.75,83.16 4 0
+github.com/bipol/scrapedumper/pkg/martaapi/client.go:87.2,88.16 2 0
+github.com/bipol/scrapedumper/pkg/martaapi/client.go:91.2,91.23 1 0
 github.com/bipol/scrapedumper/pkg/martaapi/client.go:83.16,85.3 1 0
 github.com/bipol/scrapedumper/pkg/martaapi/client.go:88.16,90.3 1 0
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:93.16,95.3 1 0
-github.com/bipol/scrapedumper/pkg/martaapi/client.go:98.16,100.3 1 0

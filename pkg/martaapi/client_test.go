@@ -20,7 +20,6 @@ var _ = Describe("Client", func() {
 		client Client
 		resp   *http.Response
 		retErr error
-		err    error
 	)
 	BeforeEach(func() {
 		resp = &http.Response{
@@ -28,7 +27,6 @@ var _ = Describe("Client", func() {
 		}
 		doer = new(martaapifakes.FakeDoer)
 		apiKey = "apikey"
-		err = nil
 		retErr = nil
 	})
 	JustBeforeEach(func() {
@@ -42,6 +40,10 @@ var _ = Describe("Client", func() {
 			apiKey,
 			logger,
 			"test",
+			"prefix",
 		)
+	})
+	It("returns a client", func() {
+		Expect(client).ToNot(BeNil())
 	})
 })
