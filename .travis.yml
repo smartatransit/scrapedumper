@@ -22,5 +22,5 @@ before_script:
 
 script:
   - golangci-lint run       # run a bunch of code checkers/linters in parallel
-  - go test -v -race ./...  # Run all the tests with the race detector enabled
-  - go build                # build it       
+  - ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress
+  - go build                # build it
