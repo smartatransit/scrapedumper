@@ -5,6 +5,11 @@
 
 It's primary purpose is to consume `MARTA` realtime data and upload it to various providers.
 
+## Continuous Integration Status
+
+[![Continuous Integration status](https://travis-ci.org/smartatransit/smarta-api.svg?branch=master)](https://travis-ci.org/smartatransit/scrapedumper.svg?branch=master)
+[![codecov](https://codecov.io/gh/smartatransit/smarta-api/branch/master/graph/badge.svg)](https://codecov.io/gh/smartatransit/scrapedumper)
+
 ## Why is this needed?
 This allows people to build a historical dataset of `MARTA` arrival times.  `SMARTA` plans to use this to provide a dataset for `MARTA` train forecasting.
 
