@@ -43,7 +43,12 @@ var _ = Describe("Client", func() {
 			"prefix",
 		)
 	})
-	It("returns a client", func() {
-		Expect(client).ToNot(BeNil())
+	Context("New", func() {
+		When("called", func() {
+			It("does not return an err", func() {
+				Expect(err).To(BeNil())
+				Expect(client).ToNot(BeNil())
+			})
+		})
 	})
 })

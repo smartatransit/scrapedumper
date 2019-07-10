@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"go.uber.org/zap"
 )
@@ -25,11 +27,13 @@ type Uploader interface {
 	Upload(input *s3manager.UploadInput, options ...func(*s3manager.Uploader)) (*s3manager.UploadOutput, error)
 }
 
+// RoundRobinDumpClient reads the scrape into disk, and then dumps that result into each dumper synchronously
 type RoundRobinDumpClient struct {
 	logger  *zap.Logger
 	clients []Dumper
 }
 
+// NewRoundRobinDumpClient instantiates a new RoundRobin client
 func NewRoundRobinDumpClient(logger *zap.Logger, clients ...Dumper) RoundRobinDumpClient {
 	return RoundRobinDumpClient{
 		logger,
@@ -54,12 +58,14 @@ func (c RoundRobinDumpClient) Dump(ctx context.Context, r io.Reader, path string
 	return err
 }
 
+// LocalDumpHandler will write a scrape to the local file sysem
 type LocalDumpHandler struct {
 	path   string
 	logger *zap.Logger
 	fs     afero.Fs
 }
 
+// NewLocalDumpHandler instantiates a new local dump handler
 func NewLocalDumpHandler(path string, logger *zap.Logger, fs afero.Fs) LocalDumpHandler {
 	return LocalDumpHandler{
 		path,
@@ -85,6 +91,7 @@ func (c LocalDumpHandler) Dump(ctx context.Context, r io.Reader, path string) er
 	return f.Close()
 }
 
+// NewS3DumpHandler instantiates a new S3 dump handler
 func NewS3DumpHandler(uploader Uploader, bucket string, logger *zap.Logger) S3DumpHandler {
 	return S3DumpHandler{
 		uploader,
@@ -93,6 +100,7 @@ func NewS3DumpHandler(uploader Uploader, bucket string, logger *zap.Logger) S3Du
 	}
 }
 
+// S3DumpHandler will write a scrape to an s3 bucket
 type S3DumpHandler struct {
 	uploader Uploader
 	bucket   string
@@ -107,4 +115,51 @@ func (c S3DumpHandler) Dump(ctx context.Context, r io.Reader, path string) error
 		Body:   r,
 	})
 	return err
+}
+
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . DynamoPuter
+type DynamoPuter interface {
+	BatchWriteItemWithContext(ctx aws.Context, input *dynamodb.BatchWriteItemInput, opts ...request.Option) (*dynamodb.BatchWriteItemOutput, error)
+}
+
+func NoOpMarshaller(r io.Reader, s string) ([]*dynamodb.BatchWriteItemInput, error) {
+	x := make([]*dynamodb.BatchWriteItemInput, 1)
+	return x, nil
+}
+
+type DynamoMarshalFunc = func(io.Reader, string) ([]*dynamodb.BatchWriteItemInput, error)
+
+// DynamoDumpHandler will write a scrape into dynamo
+// a DynamoMarshalFunc is required, which will transform the io.Reader into a BatchWriteItemInput
+type DynamoDumpHandler struct {
+	table       string
+	logger      *zap.Logger
+	dyn         DynamoPuter
+	marshalFunc DynamoMarshalFunc
+}
+
+// NewDynamoDumpHandler instantiates a new dynamo dump handler
+//a marshal func must be provided, which will transform the io.Reader provided into BatchWriteItems
+func NewDynamoDumpHandler(logger *zap.Logger, table string, dyn DynamoPuter, marshalFunc DynamoMarshalFunc) DynamoDumpHandler {
+	return DynamoDumpHandler{
+		table,
+		logger,
+		dyn,
+		marshalFunc,
+	}
+}
+
+func (c DynamoDumpHandler) Dump(ctx context.Context, r io.Reader, path string) error {
+	c.logger.Debug(fmt.Sprintf("Dynamo dump to table %s", c.table))
+	inps, err := c.marshalFunc(r, c.table)
+	if err != nil {
+		return err
+	}
+	for _, i := range inps {
+		_, err = c.dyn.BatchWriteItemWithContext(ctx, i)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

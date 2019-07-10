@@ -1,1 +1,4 @@
-.coverprofile
+*.coverprofile
+.env
+*-data
+scrapedumper

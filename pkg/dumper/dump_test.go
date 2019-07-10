@@ -113,4 +113,36 @@ var _ = Describe("Dump", func() {
 			})
 		})
 	})
+	Context("DynamoDumpHandler", func() {
+		var (
+			table  string
+			logger *zap.Logger
+			dp     *dumperfakes.FakeDynamoPuter
+			dh     dumper.DynamoDumpHandler
+			err    error
+		)
+		BeforeEach(func() {
+			table = "table"
+			logger = zap.NewNop()
+			dp = &dumperfakes.FakeDynamoPuter{}
+			err = nil
+		})
+		JustBeforeEach(func() {
+			dh = dumper.NewDynamoDumpHandler(
+				logger,
+				table,
+				dp,
+				dumper.NoOpMarshaller,
+			)
+			err = dh.Dump(context.Background(), strings.NewReader(""), "somepath")
+		})
+		When("it dumps", func() {
+			It("does not err", func() {
+				Expect(err).To(BeNil())
+			})
+			It("calls batch write item", func() {
+				Expect(dp.BatchWriteItemWithContextCallCount()).To(Equal(1))
+			})
+		})
+	})
 })
