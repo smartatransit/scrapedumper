@@ -35,7 +35,7 @@ var _ = Describe("Client", func() {
 		doer.DoReturns(resp, retErr)
 		logger, _ := zap.NewProduction()
 		defer func() {
-			_ := logger.Sync()
+			_ = logger.Sync()
 		}()
 		client = New(
 			doer,
