@@ -2,23 +2,22 @@ package postgres
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
+	"github.com/bipol/scrapedumper/pkg/marta"
 	"github.com/jinzhu/gorm"
-	"github.com/smartatransit/scrapedumper/pkg/marta"
 )
 
 //Repository implements interactions with Postgres through GORM
 type Repository interface {
 	EnsureTables() error
 
-	GetLatestRunIdentifierFor(dir marta.Direction, line marta.Line, trainID string) (string, error)
+	GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (startTime time.Time, lastUpdated time.Time, err error)
 	EnsureArrivalRecord(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station) error
 	AddArrivalEstimate(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, estimate ArrivalEstimate) error
-	SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, arrivalTime time.Time) error
+	SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, estimate ArrivalEstimate) error
 
-	//TODO AddRecordToDatabase which accepts a time.Duration for de-duping
+	// TODO AddRecordToDatabase which accepts a time.Duration for de-duping
 }
 
 //RepositoryAgent implements Repository
@@ -31,26 +30,28 @@ func (a *RepositoryAgent) EnsureTables() error {
 	return a.DB.AutoMigrate(&Arrival{}).Error
 }
 
-//GetLatestRunIdentifierFor gets the run identifier of the most recent run matching this info
-func (a *RepositoryAgent) GetLatestRunIdentifierFor(dir marta.Direction, line marta.Line, trainID string) (string, error) {
+//GetLatestRunStartMomentFor from among all runs matching the specified data, this function selects
+//the most recent one and returns it's earliest start time (used as part of the run identifier) as
+//well as it's most recent one, which is used for determining whether it is stale. If no runs match
+//the metadata, it returns two zero time.Time objects and no error
+func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (startTime time.Time, lastUpdated time.Time, err error) {
 	row := a.DB.Model(&Arrival{}).
 		Where("direction = ?", string(dir)).
 		Where("line = ?", string(line)).
 		Where("train_id = ?", trainID).
-		Order("run_first_event_moment DESC").Limit(1).
-		Select("run_first_event_moment").Row()
-	if a.DB.Error != nil {
-		return "", a.DB.Error
+		Order("run_first_event_moment DESC").
+		Order("most_revent_event_time DESC").Limit(1).
+		Select("run_first_event_moment", "most_revent_event_time").Row()
+	if err = a.DB.Error; err != nil {
+		return time.Time{}, time.Time{}, err
 	}
 
 	if row == nil {
-		return "", nil
+		return time.Time{}, time.Time{}, nil
 	}
 
-	var runFirstEventMoment time.Time
-	err := row.Scan(&runFirstEventMoment)
-
-	return fmt.Sprintf("%s_%s_%s_%s", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339)), err
+	err = row.Scan(&startTime, &lastUpdated)
+	return startTime, lastUpdated, err
 }
 
 //EnsureArrivalRecord ensures that a record exists for the specified arrival
@@ -99,7 +100,8 @@ func (a *RepositoryAgent) AddArrivalEstimate(dir marta.Direction, line marta.Lin
 	ests = append(ests, estimate)
 
 	err = a.DB.Model(&Arrival{Identifier: ident}).
-		Update("arrival_estimates", ests).Error
+		Update("arrival_estimates", ests).
+		Update("most_revent_event_time", estimate.EventTime).Error
 	if err != nil {
 		return err
 	}
@@ -108,22 +110,18 @@ func (a *RepositoryAgent) AddArrivalEstimate(dir marta.Direction, line marta.Lin
 }
 
 //SetArrivalTime upserts the specified actual arrival time to the arrival record in question
-func (a *RepositoryAgent) SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, arrivalTime time.Time) error {
+func (a *RepositoryAgent) SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, estimate ArrivalEstimate) error {
 	if err := a.EnsureArrivalRecord(dir, line, trainID, runFirstEventMoment, station); err != nil {
 		return nil
 	}
 
 	ident := IdentifierFor(dir, line, trainID, runFirstEventMoment, station)
 	err := a.DB.Model(&Arrival{Identifier: ident}).
-		Update("arrival_time", arrivalTime).Error
+		Update("arrival_time", estimate.EstimatedArrivalTime).
+		Update("most_revent_event_time", estimate.EventTime).Error
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
-
-//TODO:
-// - write a migrator and repository
-// - write a BATCH LOADER interface
-// - write a dumper interface

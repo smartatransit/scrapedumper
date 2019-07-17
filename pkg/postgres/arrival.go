@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bipol/scrapedumper/pkg/marta"
 	"github.com/jinzhu/gorm"
-	"github.com/smartatransit/scrapedumper/pkg/marta"
 )
 
 //ArrivalEstimate ArrivalEstimate
@@ -35,10 +35,13 @@ func (ae ArrivalEstimates) Value() (driver.Value, error) {
 	return string(bs), err
 }
 
-//Arrival Arrival
+//Arrival encodes information about a particular arrival of a train at a station,
+//including the actual arrival time and any arrival estimates made beforehand.
 type Arrival struct {
 	Identifier    string `gorm:"type:text;PRIMARY_KEY"`
 	RunIdentifier string `gorm:"type:text"`
+
+	MostRecentEventTime time.Time `gorm:"type:timestamp"`
 
 	Direction           marta.Direction `gorm:"type:text;index:runs"`
 	Line                marta.Line      `gorm:"type:text;index:runs"`
@@ -59,10 +62,10 @@ func (a *Arrival) BeforeCreate(scope *gorm.Scope) (err error) {
 
 //IdentifierFor creates a identifier for the given metadata
 func IdentifierFor(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station) string {
-	return fmt.Sprintf("%s_%s_%s_%s_%s", dir, line, trainID, runFirstEventMoment, station)
+	return fmt.Sprintf("%s_%s_%s_%s_%s", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339), station)
 }
 
 //RunIdentifierFor creates a run identifier for the given metadata
 func RunIdentifierFor(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time) string {
-	return fmt.Sprintf("%s_%s_%s_%s", dir, line, trainID, runFirstEventMoment)
+	return fmt.Sprintf("%s_%s_%s_%s", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339))
 }

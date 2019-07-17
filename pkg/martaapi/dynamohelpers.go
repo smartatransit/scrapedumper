@@ -11,7 +11,7 @@ import (
 )
 
 func ScheduleToWriteRequest(s Schedule, t string) (*dynamodb.WriteRequest, error) {
-	date, err := time.Parse("1/2/2006 3:04:05 PM", s.EventTime)
+	date, err := time.Parse(MartaAPITimeFormat, s.EventTime)
 	if err != nil {
 		return nil, err
 	}
