@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -32,19 +33,19 @@ type DumpConfig struct {
 	Kind DumperKind `json:"kind"`
 
 	Components          []DumpConfig `json:"components"`
-	LocalOutputLocation string       `json:"local_output_location"`
-	S3BucketName        string       `json:"s3_bucket_name"`
-	DynamoTableName     string       `json:"dynamo_table_name"`
+	LocalOutputLocation *string      `json:"local_output_location"`
+	S3BucketName        *string      `json:"s3_bucket_name"`
+	DynamoTableName     *string      `json:"dynamo_table_name"`
 }
 
 //BuildDumper builds the dumper described by the given config option
-func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
+func BuildDumper(log *zap.Logger, c DumpConfig, gc GlobalConfig) (dumper.Dumper, error) {
 	switch c.Kind {
 	case RoundRobinKind:
 		componentDumpers := make([]dumper.Dumper, len(c.Components))
 		for i := range c.Components {
 			var err error
-			componentDumpers[i], err = BuildDumper(log, c.Components[i])
+			componentDumpers[i], err = BuildDumper(log, c.Components[i], gc)
 			if err != nil {
 				return nil, err
 			}
@@ -52,19 +53,50 @@ func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
 
 		return dumper.NewRoundRobinDumpClient(log, componentDumpers...), nil
 	case FileDumperKind:
-		return dumper.NewLocalDumpHandler(c.LocalOutputLocation, log, afero.NewOsFs()), nil
+		var localOutputLocation string
+		if c.LocalOutputLocation == nil {
+			if gc.OutputLocation == nil {
+				return nil, errors.New("dumper kind FILE requested but no file output location provided: provide a local output location using the config file, a command-line argument, or an environment variable")
+			}
+
+			localOutputLocation = *gc.OutputLocation
+		} else {
+			localOutputLocation = *c.LocalOutputLocation
+		}
+
+		return dumper.NewLocalDumpHandler(localOutputLocation, log, afero.NewOsFs()), nil
 	case DynamoDBDumperKind:
+		var dynamoTableName string
+		if c.DynamoTableName == nil {
+			if gc.DynamoTableName == nil {
+				return nil, errors.New("dumper kind DYNAMODB requested but no dynamo table name provided: provide a dynamo table name using the config file, a command-line argument, or an environment variable")
+			}
+
+			dynamoTableName = *gc.DynamoTableName
+		} else {
+			dynamoTableName = *c.DynamoTableName
+		}
+
 		dynamoClient := dynamodb.New(session.Must(session.NewSession()))
 
 		//TODO expose flexibility in the marshalFunc?
-		return dumper.NewDynamoDumpHandler(log, c.DynamoTableName, dynamoClient, martaapi.DigestScheduleResponse), nil
+		return dumper.NewDynamoDumpHandler(log, dynamoTableName, dynamoClient, martaapi.DigestScheduleResponse), nil
 	case S3DumperKind:
-		s3Manager := s3manager.NewUploaderWithClient(
-			s3.New(session.Must(session.NewSession())),
-		)
-		return dumper.NewS3DumpHandler(s3Manager, c.S3BucketName, log), nil
+		var s3BucketName string
+		if c.S3BucketName == nil {
+			if gc.S3BucketName == nil {
+				return nil, errors.New("dumper kind S3 requested but no s3 bucket name provided: provide an s3 bucket name using the config file, a command-line argument, or an environment variable")
+			}
 
+			s3BucketName = *gc.S3BucketName
+		} else {
+			s3BucketName = *c.S3BucketName
+		}
+
+		s3Manager := s3manager.NewUploaderWithClient(s3.New(session.Must(session.NewSession())))
+
+		return dumper.NewS3DumpHandler(s3Manager, s3BucketName, log), nil
 	default:
-		return nil, fmt.Errorf("unrecognized or unimplemented dumper kind `%s`", string(c.Kind))
+		return nil, fmt.Errorf("unsupported dumper kind `%s`", string(c.Kind))
 	}
 }
