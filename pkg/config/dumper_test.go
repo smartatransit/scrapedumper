@@ -22,7 +22,9 @@ var _ = Describe("BuildDumper", func() {
 
 	When("the Kind is RoundRobinKind", func() {
 		BeforeEach(func() {
-			cfg.Kind = config.RoundRobinKind
+			cfg = config.DumpConfig{
+				Kind: config.RoundRobinKind,
+			}
 		})
 
 		It("produces a RoundRobinDumper", func() {
@@ -47,8 +49,10 @@ var _ = Describe("BuildDumper", func() {
 
 	When("the Kind is FileDumperKind", func() {
 		BeforeEach(func() {
-			cfg.Kind = config.FileDumperKind
-			cfg.LocalOutputLocation = "/my/dir"
+			cfg = config.DumpConfig{
+				Kind:                config.FileDumperKind,
+				LocalOutputLocation: "/my/dir",
+			}
 		})
 
 		It("produces a LocalDumpHandler", func() {
@@ -68,8 +72,10 @@ var _ = Describe("BuildDumper", func() {
 	})
 	When("the Kind is S3DumperKind", func() {
 		BeforeEach(func() {
-			cfg.Kind = config.S3DumperKind
-			cfg.S3BucketName = "bucket-name"
+			cfg = config.DumpConfig{
+				Kind:         config.S3DumperKind,
+				S3BucketName: "bucket-name",
+			}
 		})
 
 		It("produces a S3DumpHandler", func() {
@@ -89,8 +95,10 @@ var _ = Describe("BuildDumper", func() {
 	})
 	When("the Kind is DynamoDBDumperKind", func() {
 		BeforeEach(func() {
-			cfg.Kind = config.DynamoDBDumperKind
-			cfg.DynamoTableName = "my-table"
+			cfg = config.DumpConfig{
+				Kind:            config.DynamoDBDumperKind,
+				DynamoTableName: "my-table",
+			}
 		})
 
 		It("produces a DynamoDumpHandler", func() {
