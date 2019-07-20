@@ -22,7 +22,7 @@ const (
 	RoundRobinKind DumperKind = "ROUND_ROBIN"
 	//FileDumperKind creates a dumper that writes to a local filesystem
 	FileDumperKind DumperKind = "FILE"
-	//S3DumperKind creates a dumper that writes to an S3 bucker
+	//S3DumperKind creates a dumper that writes to an S3 bucket
 	S3DumperKind DumperKind = "S3"
 	//DynamoDBDumperKind creates a dumper that writes to a dynamodb table
 	DynamoDBDumperKind DumperKind = "DYNAMODB"
@@ -33,19 +33,19 @@ type DumpConfig struct {
 	Kind DumperKind `json:"kind"`
 
 	Components          []DumpConfig `json:"components"`
-	LocalOutputLocation *string      `json:"local_output_location"`
-	S3BucketName        *string      `json:"s3_bucket_name"`
-	DynamoTableName     *string      `json:"dynamo_table_name"`
+	LocalOutputLocation string       `json:"local_output_location"`
+	S3BucketName        string       `json:"s3_bucket_name"`
+	DynamoTableName     string       `json:"dynamo_table_name"`
 }
 
 //BuildDumper builds the dumper described by the given config option
-func BuildDumper(log *zap.Logger, c DumpConfig, gc GlobalConfig) (dumper.Dumper, error) {
+func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
 	switch c.Kind {
 	case RoundRobinKind:
 		componentDumpers := make([]dumper.Dumper, len(c.Components))
 		for i := range c.Components {
 			var err error
-			componentDumpers[i], err = BuildDumper(log, c.Components[i], gc)
+			componentDumpers[i], err = BuildDumper(log, c.Components[i])
 			if err != nil {
 				return nil, err
 			}
@@ -54,27 +54,19 @@ func BuildDumper(log *zap.Logger, c DumpConfig, gc GlobalConfig) (dumper.Dumper,
 		return dumper.NewRoundRobinDumpClient(log, componentDumpers...), nil
 	case FileDumperKind:
 		var localOutputLocation string
-		if c.LocalOutputLocation == nil {
-			if gc.OutputLocation == nil {
-				return nil, errors.New("dumper kind FILE requested but no file output location provided: provide a local output location using the config file, a command-line argument, or an environment variable")
-			}
-
-			localOutputLocation = *gc.OutputLocation
+		if c.LocalOutputLocation == "" {
+			return nil, errors.New("dumper kind FILE requested but no file output location provided: provide a local output location using the config file, a command-line argument, or an environment variable")
 		} else {
-			localOutputLocation = *c.LocalOutputLocation
+			localOutputLocation = c.LocalOutputLocation
 		}
 
 		return dumper.NewLocalDumpHandler(localOutputLocation, log, afero.NewOsFs()), nil
 	case DynamoDBDumperKind:
 		var dynamoTableName string
-		if c.DynamoTableName == nil {
-			if gc.DynamoTableName == nil {
-				return nil, errors.New("dumper kind DYNAMODB requested but no dynamo table name provided: provide a dynamo table name using the config file, a command-line argument, or an environment variable")
-			}
-
-			dynamoTableName = *gc.DynamoTableName
+		if c.DynamoTableName == "" {
+			return nil, errors.New("dumper kind DYNAMODB requested but no dynamo table name provided: provide a dynamo table name using the config file, a command-line argument, or an environment variable")
 		} else {
-			dynamoTableName = *c.DynamoTableName
+			dynamoTableName = c.DynamoTableName
 		}
 
 		dynamoClient := dynamodb.New(session.Must(session.NewSession()))
@@ -83,14 +75,10 @@ func BuildDumper(log *zap.Logger, c DumpConfig, gc GlobalConfig) (dumper.Dumper,
 		return dumper.NewDynamoDumpHandler(log, dynamoTableName, dynamoClient, martaapi.DigestScheduleResponse), nil
 	case S3DumperKind:
 		var s3BucketName string
-		if c.S3BucketName == nil {
-			if gc.S3BucketName == nil {
-				return nil, errors.New("dumper kind S3 requested but no s3 bucket name provided: provide an s3 bucket name using the config file, a command-line argument, or an environment variable")
-			}
-
-			s3BucketName = *gc.S3BucketName
+		if c.S3BucketName == "" {
+			return nil, errors.New("dumper kind S3 requested but no s3 bucket name provided: provide an s3 bucket name using the config file, a command-line argument, or an environment variable")
 		} else {
-			s3BucketName = *c.S3BucketName
+			s3BucketName = c.S3BucketName
 		}
 
 		s3Manager := s3manager.NewUploaderWithClient(s3.New(session.Must(session.NewSession())))

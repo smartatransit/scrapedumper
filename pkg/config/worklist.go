@@ -20,14 +20,13 @@ func BuildWorkList(
 	c WorkConfig,
 	busClient martaapi.Client,
 	trainClient martaapi.Client,
-	gc GlobalConfig,
 ) (workList worker.WorkList, err error) {
-	busDumper, err := BuildDumper(log, c.BusDumper, gc)
+	busDumper, err := BuildDumper(log, c.BusDumper)
 	if err != nil {
 		return
 	}
 
-	trainDumper, err := BuildDumper(log, c.TrainDumper, gc)
+	trainDumper, err := BuildDumper(log, c.TrainDumper)
 	if err != nil {
 		return
 	}
