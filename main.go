@@ -107,8 +107,11 @@ func GetWorkConfig(opts options) (wc config.WorkConfig, err error) {
 
 //BuildDefaultWorkConfig produces the default collection of dumpers
 func BuildDefaultWorkConfig(opts options) config.WorkConfig {
-	var dumpConfig []config.DumpConfig
-	var busConfig []config.DumpConfig
+	var (
+		dumpConfig []config.DumpConfig
+		busConfig  []config.DumpConfig
+		cfg        config.WorkConfig
+	)
 	if opts.S3BucketName != "" {
 		dumpConfig = append(dumpConfig,
 			config.DumpConfig{
@@ -145,14 +148,18 @@ func BuildDefaultWorkConfig(opts options) config.WorkConfig {
 			},
 		)
 	}
-	return config.WorkConfig{
-		TrainDumper: config.DumpConfig{
+	if len(dumpConfig) != 0 {
+		cfg.TrainDumper = config.DumpConfig{
 			Kind:       config.RoundRobinKind,
 			Components: dumpConfig,
-		},
-		BusDumper: config.DumpConfig{
+		}
+	}
+	if len(busConfig) != 0 {
+		cfg.BusDumper = config.DumpConfig{
 			Kind:       config.RoundRobinKind,
 			Components: busConfig,
-		},
+		}
+
 	}
+	return cfg
 }
