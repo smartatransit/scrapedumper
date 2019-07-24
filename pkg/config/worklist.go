@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/worker"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -23,11 +24,13 @@ func BuildWorkList(
 ) (workList worker.WorkList, err error) {
 	busDumper, err := BuildDumper(log, c.BusDumper)
 	if err != nil {
+		err = errors.Wrap(err, "failed to build bus dumper")
 		return
 	}
 
 	trainDumper, err := BuildDumper(log, c.TrainDumper)
 	if err != nil {
+		err = errors.Wrap(err, "failed to build train dumper")
 		return
 	}
 

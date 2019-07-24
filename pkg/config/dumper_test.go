@@ -24,6 +24,12 @@ var _ = Describe("BuildDumper", func() {
 		BeforeEach(func() {
 			cfg = config.DumpConfig{
 				Kind: config.RoundRobinKind,
+				Components: []config.DumpConfig{
+					config.DumpConfig{
+						Kind:         config.S3DumperKind,
+						S3BucketName: "my-bucket",
+					},
+				},
 			}
 		})
 
@@ -33,13 +39,18 @@ var _ = Describe("BuildDumper", func() {
 			Expect(callErr).To(BeNil())
 		})
 
+		When("no components are specified", func() {
+			BeforeEach(func() {
+				cfg.Components = []config.DumpConfig{}
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError(ContainSubstring("dumper kind ROUND_ROBIN requested but no components provided")))
+			})
+		})
+
 		When("one of the dumpers can't be build", func() {
 			BeforeEach(func() {
-				cfg.Components = []config.DumpConfig{
-					config.DumpConfig{
-						Kind: config.S3DumperKind,
-					},
-				}
+				cfg.Components[0].S3BucketName = ""
 			})
 			It("fails", func() {
 				Expect(callErr).To(MatchError(ContainSubstring("dumper kind S3 requested but no s3 bucket name provided")))

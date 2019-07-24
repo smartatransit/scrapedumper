@@ -45,7 +45,7 @@ func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
 	switch c.Kind {
 	case RoundRobinKind:
 		componentDumpers := make([]dumper.Dumper, len(c.Components))
-		if len(c.Components) != 0 {
+		if len(c.Components) == 0 {
 			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no components provided: provide components using the config file, a command-line argument, or an environment variable", RoundRobinKind)
 		}
 
