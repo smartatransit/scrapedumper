@@ -149,13 +149,13 @@ func BuildDefaultWorkConfig(opts options) config.WorkConfig {
 		)
 	}
 	if len(dumpConfig) != 0 {
-		cfg.TrainDumper = config.DumpConfig{
+		cfg.TrainDumper = &config.DumpConfig{
 			Kind:       config.RoundRobinKind,
 			Components: dumpConfig,
 		}
 	}
 	if len(busConfig) != 0 {
-		cfg.BusDumper = config.DumpConfig{
+		cfg.BusDumper = &config.DumpConfig{
 			Kind:       config.RoundRobinKind,
 			Components: busConfig,
 		}
