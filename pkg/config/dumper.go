@@ -1,17 +1,16 @@
 package config
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/bipol/scrapedumper/pkg/dumper"
-	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
+
+	"github.com/bipol/scrapedumper/pkg/dumper"
+	"github.com/bipol/scrapedumper/pkg/martaapi"
 )
 
 //DumperKind is an enum type used to specify which type of dumper is being configured
@@ -38,11 +37,18 @@ type DumpConfig struct {
 	DynamoTableName     string       `json:"dynamo_table_name"`
 }
 
+//ErrDumperValidationFailed indicates that a dumper's configuration was invalid
+var ErrDumperValidationFailed = errors.New("dumper failed to build due to missing args")
+
 //BuildDumper builds the dumper described by the given config option
 func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
 	switch c.Kind {
 	case RoundRobinKind:
 		componentDumpers := make([]dumper.Dumper, len(c.Components))
+		if len(c.Components) != 0 {
+			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no components provided: provide components using the config file, a command-line argument, or an environment variable", RoundRobinKind)
+		}
+
 		for i := range c.Components {
 			var err error
 			componentDumpers[i], err = BuildDumper(log, c.Components[i])
@@ -53,38 +59,28 @@ func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
 
 		return dumper.NewRoundRobinDumpClient(log, componentDumpers...), nil
 	case FileDumperKind:
-		var localOutputLocation string
 		if c.LocalOutputLocation == "" {
-			return nil, errors.New("dumper kind FILE requested but no file output location provided: provide a local output location using the config file, a command-line argument, or an environment variable")
-		} else {
-			localOutputLocation = c.LocalOutputLocation
+			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no file output location provided: provide a local output location using the config file, a command-line argument, or an environment variable", FileDumperKind)
 		}
 
-		return dumper.NewLocalDumpHandler(localOutputLocation, log, afero.NewOsFs()), nil
+		return dumper.NewLocalDumpHandler(c.LocalOutputLocation, log, afero.NewOsFs()), nil
 	case DynamoDBDumperKind:
-		var dynamoTableName string
 		if c.DynamoTableName == "" {
-			return nil, errors.New("dumper kind DYNAMODB requested but no dynamo table name provided: provide a dynamo table name using the config file, a command-line argument, or an environment variable")
-		} else {
-			dynamoTableName = c.DynamoTableName
+			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no dynamo table name provided: provide a dynamo table name using the config file, a command-line argument, or an environment variable", DynamoDBDumperKind)
 		}
 
 		dynamoClient := dynamodb.New(session.Must(session.NewSession()))
 
-		//TODO expose flexibility in the marshalFunc?
-		return dumper.NewDynamoDumpHandler(log, dynamoTableName, dynamoClient, martaapi.DigestScheduleResponse), nil
+		return dumper.NewDynamoDumpHandler(log, c.DynamoTableName, dynamoClient, martaapi.DigestScheduleResponse), nil
 	case S3DumperKind:
-		var s3BucketName string
 		if c.S3BucketName == "" {
-			return nil, errors.New("dumper kind S3 requested but no s3 bucket name provided: provide an s3 bucket name using the config file, a command-line argument, or an environment variable")
-		} else {
-			s3BucketName = c.S3BucketName
+			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no s3 bucket name provided: provide an s3 bucket name using the config file, a command-line argument, or an environment variable", S3DumperKind)
 		}
 
 		s3Manager := s3manager.NewUploaderWithClient(s3.New(session.Must(session.NewSession())))
 
-		return dumper.NewS3DumpHandler(s3Manager, s3BucketName, log), nil
+		return dumper.NewS3DumpHandler(s3Manager, c.S3BucketName, log), nil
 	default:
-		return nil, fmt.Errorf("unsupported dumper kind `%s`", string(c.Kind))
+		return nil, errors.Wrapf(ErrDumperValidationFailed, "unsupported dumper kind `%s`", string(c.Kind))
 	}
 }
