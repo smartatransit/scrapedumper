@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/bipol/scrapedumper/pkg/circuitbreaker"
@@ -98,10 +99,12 @@ func GetWorkConfig(opts options) (wc config.WorkConfig, err error) {
 
 	file, err := os.Open(*opts.ConfigPath)
 	if err != nil {
+		err = errors.Wrapf(err, "failed opening config file %s for reading", file.Name())
 		return
 	}
 
 	err = json.NewDecoder(file).Decode(&wc)
+	err = errors.Wrapf(err, "failed parsing config file %s", file.Name())
 	return
 }
 
