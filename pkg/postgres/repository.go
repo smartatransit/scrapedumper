@@ -16,8 +16,15 @@ type Repository interface {
 	EnsureArrivalRecord(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station) error
 	AddArrivalEstimate(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, estimate ArrivalEstimate) error
 	SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, estimate ArrivalEstimate) error
+}
 
-	// TODO AddRecordToDatabase which accepts a time.Duration for de-duping
+//NewRepository creates a new postgres respotitory
+func NewRepository(
+	db *gorm.DB,
+) *RepositoryAgent {
+	return &RepositoryAgent{
+		DB: db,
+	}
 }
 
 //RepositoryAgent implements Repository

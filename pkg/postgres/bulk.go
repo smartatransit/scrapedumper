@@ -17,11 +17,20 @@ type BulkLoader interface {
 
 //BulkLoaderAgent implements BulkLoader
 type BulkLoaderAgent struct {
-	Upserter Upserter
+	upserter Upserter
+}
+
+//NewBulkLoader creates a new BulkLoader
+func NewBulkLoader(
+	upserter Upserter,
+) BulkLoader {
+	return BulkLoaderAgent{
+		upserter: upserter,
+	}
 }
 
 //LoadDir loads all files in the specified directory
-func (a *BulkLoaderAgent) LoadDir(dir string) error {
+func (a BulkLoaderAgent) LoadDir(dir string) error {
 	infos, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
@@ -47,15 +56,15 @@ func (a *BulkLoaderAgent) LoadDir(dir string) error {
 }
 
 //Load loads a file into the Postgres database
-func (a *BulkLoaderAgent) Load(r io.Reader) error {
+func (a BulkLoaderAgent) Load(r io.Reader) error {
 	var records []martaapi.Schedule
-	err := json.NewDecoder(r).Decode(records)
+	err := json.NewDecoder(r).Decode(&records)
 	if err != nil {
 		return err
 	}
 
 	for _, rec := range records {
-		err := a.Upserter.AddRecordToDatabase(rec)
+		err := a.upserter.AddRecordToDatabase(rec)
 		if err != nil {
 			return err
 		}

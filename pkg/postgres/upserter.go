@@ -13,16 +13,27 @@ type Upserter interface {
 	AddRecordToDatabase(martaapi.Schedule) error
 }
 
+//NewUpserter creates a new postgres upserter
+func NewUpserter(
+	repo Repository,
+	runLifetime time.Duration,
+) *UpserterAgent {
+	return &UpserterAgent{
+		repo:        repo,
+		runLifetime: runLifetime,
+	}
+}
+
 //UpserterAgent implements Upserter
 type UpserterAgent struct {
-	Repo        Repository
-	RunLifetime time.Duration
+	repo        Repository
+	runLifetime time.Duration
 }
 
 //AddRecordToDatabase upserts a record to the database, while
 //attempting to reconcile separate records from the same train run
 func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) error {
-	runStartMoment, lastUpdated, err := a.Repo.GetLatestRunStartMomentFor(marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID)
+	runStartMoment, lastUpdated, err := a.repo.GetLatestRunStartMomentFor(marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID)
 	if err != nil {
 		return err
 	}
@@ -35,13 +46,23 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) error {
 	//if the run didn't match, or if the latest run is stale,
 	//then this is the start of a new run
 	if runStartMoment == (time.Time{}) ||
-		lastUpdated.Before(time.Now().Add(-a.RunLifetime)) {
+		lastUpdated.Before(time.Now().Add(-a.runLifetime)) {
 
 		runStartMoment = eventTime
 	}
 
 	if rec.HasArrived() {
-		err = a.Repo.SetArrivalTime(marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID, runStartMoment, marta.Station(rec.Station), eventTime)
+		err = a.repo.SetArrivalTime(
+			marta.Direction(rec.Direction),
+			marta.Line(rec.Line),
+			rec.TrainID,
+			runStartMoment,
+			marta.Station(rec.Station),
+			ArrivalEstimate{
+				EventTime:            eventTime,
+				EstimatedArrivalTime: time.Time{}, /* TODO */
+			},
+		)
 		if err != nil {
 			return err
 		}
@@ -51,7 +72,7 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) error {
 			return err
 		}
 
-		err = a.Repo.AddArrivalEstimate(
+		err = a.repo.AddArrivalEstimate(
 			marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID, runStartMoment, marta.Station(rec.Station),
 			ArrivalEstimate{
 				EventTime:            eventTime,

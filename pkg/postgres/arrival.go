@@ -10,7 +10,8 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-//ArrivalEstimate ArrivalEstimate
+//ArrivalEstimate encapsulates an estimated arrival time and
+//the time when the estimate was made
 type ArrivalEstimate struct {
 	EventTime            time.Time `json:"event_time"`
 	EstimatedArrivalTime time.Time `json:"estimated_arrival_time"`
