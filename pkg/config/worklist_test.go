@@ -18,11 +18,11 @@ var _ = Describe("BuildWorkList", func() {
 	)
 
 	BeforeEach(func() {
-		cfg.BusDumper = config.DumpConfig{
+		cfg.BusDumper = &config.DumpConfig{
 			Kind:         config.S3DumperKind,
 			S3BucketName: "my-bucket",
 		}
-		cfg.TrainDumper = config.DumpConfig{
+		cfg.TrainDumper = &config.DumpConfig{
 			Kind:         config.S3DumperKind,
 			S3BucketName: "my-bucket",
 		}
