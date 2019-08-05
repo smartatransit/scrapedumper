@@ -4,6 +4,7 @@ language: go
 
 env:
   - GO111MODULE=on
+  - COMMIT=${TRAVIS_COMMIT::8}
 
 go:
   - 1.11.x
