@@ -2,7 +2,6 @@ module github.com/bipol/scrapedumper
 
 require (
 	cloud.google.com/go v0.41.0 // indirect
-	github.com/GetTerminus/job-statuses v0.0.0-20190510000115-f91105184a2c // indirect
 	github.com/aws/aws-sdk-go v1.19.28
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/jessevdk/go-flags v1.4.0

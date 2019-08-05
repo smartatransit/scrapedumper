@@ -193,7 +193,7 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 	}
 
 	for _, rec := range records {
-		err := a.upserter.AddRecordToDatabase(rec)
+		err := c.upserter.AddRecordToDatabase(rec)
 		if err != nil {
 			return errors.Wrap(err, "failed to upsert MARTA API response to postgres")
 		}
