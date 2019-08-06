@@ -99,7 +99,7 @@ func GetWorkConfig(opts options) (wc config.WorkConfig, err error) {
 
 	file, err := os.Open(*opts.ConfigPath)
 	if err != nil {
-		err = errors.Wrapf(err, "failed opening config file %s for reading", file.Name())
+		err = errors.Wrapf(err, "failed opening config file %s for reading", *opts.ConfigPath)
 		return
 	}
 
