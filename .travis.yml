@@ -27,7 +27,7 @@ script:
   - go build                # build it
   - docker login -u $DOCKER_USER -p $DOCKER_PASS
   - export REPO=smartatransit/scrapedumper
-  - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
+  - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo "staging" ; fi`
   - docker build . -t $REPO:${TRAVIS_COMMIT::8}
   - docker tag $REPO:${TRAVIS_COMMIT::8} $REPO:$TAG
   - docker tag $REPO:${TRAVIS_COMMIT::8} $REPO:travis-$TRAVIS_BUILD_NUMBER
