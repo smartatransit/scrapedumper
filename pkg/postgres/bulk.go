@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 )
@@ -41,7 +42,8 @@ func (a BulkLoaderAgent) LoadDir(dir string) error {
 			continue
 		}
 
-		file, err := os.Open(info.Name())
+		path := path.Join(dir, info.Name())
+		file, err := os.Open(path)
 		if err != nil {
 			return err
 		}
