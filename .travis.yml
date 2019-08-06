@@ -24,7 +24,7 @@ before_script:
 script:
   - golangci-lint run       # run a bunch of code checkers/linters in parallel
   - ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress
-  - go build                # build it
+  - GOOS=linux go build
   - docker login -u $DOCKER_USER -p $DOCKER_PASS
   - export REPO=smartatransit/scrapedumper
   - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo "staging" ; fi`
