@@ -47,8 +47,8 @@ func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line m
 		Where("line = ?", string(line)).
 		Where("train_id = ?", trainID).
 		Order("run_first_event_moment DESC").
-		Order("most_revent_event_time DESC").Limit(1).
-		Select("run_first_event_moment", "most_revent_event_time").Row()
+		Order("most_recent_event_time DESC").Limit(1).
+		Select("run_first_event_moment", "most_recent_event_time").Row()
 	if err = a.DB.Error; err != nil {
 		return time.Time{}, time.Time{}, err
 	}
@@ -108,7 +108,7 @@ func (a *RepositoryAgent) AddArrivalEstimate(dir marta.Direction, line marta.Lin
 
 	err = a.DB.Model(&Arrival{Identifier: ident}).
 		Update("arrival_estimates", ests).
-		Update("most_revent_event_time", estimate.EventTime).Error
+		Update("most_recent_event_time", estimate.EventTime).Error
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func (a *RepositoryAgent) SetArrivalTime(dir marta.Direction, line marta.Line, t
 	ident := IdentifierFor(dir, line, trainID, runFirstEventMoment, station)
 	err := a.DB.Model(&Arrival{Identifier: ident}).
 		Update("arrival_time", estimate.EstimatedArrivalTime).
-		Update("most_revent_event_time", estimate.EventTime).Error
+		Update("most_recent_event_time", estimate.EventTime).Error
 	if err != nil {
 		return err
 	}
