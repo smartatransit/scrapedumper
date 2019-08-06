@@ -1,5 +1,5 @@
-FROM alpine:3.9
+FROM golang:1.12
 
 COPY scrapedumper scrapedumper
 
-CMD ["/scrapedumper", "--config-path", "/config.yml"]
+CMD ["/scrapedumper"]
