@@ -43,24 +43,25 @@ func (a *RepositoryAgent) EnsureTables() error {
 //well as it's most recent one, which is used for determining whether it is stale. If no runs match
 //the metadata, it returns two zero time.Time objects and no error
 func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (startTime time.Time, lastUpdated time.Time, err error) {
-	row := a.DB.Model(&Arrival{}).
+	rows, err := a.DB.Model(&Arrival{}).
 		Where("direction = ?", string(dir)).
 		Where("line = ?", string(line)).
 		Where("train_id = ?", trainID).
 		Order("run_first_event_moment DESC").
 		Order("most_recent_event_time DESC").Limit(1).
-		Select("run_first_event_moment", "most_recent_event_time").Row()
+		Select("run_first_event_moment", "most_recent_event_time").Rows()
 	if err = a.DB.Error; err != nil {
 		err = errors.Wrapf(err, "failed to query latest run start moment for dir `%s` line `%s` and train `%s`", dir, line, trainID)
 		return
 	}
+	defer rows.Close()
 
-	if row == nil {
+	if rows.Next() {
+		err = rows.Scan(&startTime, &lastUpdated)
 		return
 	}
 
-	err = row.Scan(&startTime, &lastUpdated)
-	err = errors.Wrapf(err, "failed to scan result for dir `%s` line `%s` and train `%s`", dir, line, trainID)
+	//not found, return time.Time{}, time.Time{}, nil
 	return
 }
 
