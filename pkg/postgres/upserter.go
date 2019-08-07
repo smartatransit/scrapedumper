@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/bipol/scrapedumper/pkg/marta"
@@ -40,7 +41,7 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 		return
 	}
 
-	runStartMoment, lastUpdated, err := a.repo.GetLatestRunStartMomentFor(marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID)
+	runStartMoment, mostRecentEventTime, err := a.repo.GetLatestRunStartMomentFor(marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to get latest run start moment for record `%s`", rec.String())
 		return
@@ -49,22 +50,23 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 	//if the run didn't match, or if the latest run is stale,
 	//then this is the start of a new run
 	if runStartMoment == (time.Time{}) ||
-		lastUpdated.Before(eventTime.Add(-a.runLifetime)) {
+		mostRecentEventTime.Before(eventTime.Add(-a.runLifetime)) {
 
 		runStartMoment = eventTime
 	}
 
 	if rec.HasArrived() {
+		fmt.Println("bouta set arrival")
+		//TODO this is a potential source of error - there may be smarter ways to infer the arrival moment
+		arrivalTime := eventTime
 		err = a.repo.SetArrivalTime(
 			marta.Direction(rec.Direction),
 			marta.Line(rec.Line),
 			rec.TrainID,
 			runStartMoment,
 			marta.Station(rec.Station),
-			ArrivalEstimate{
-				EventTime:            eventTime,
-				EstimatedArrivalTime: time.Time{}, /* TODO */
-			},
+			eventTime,
+			arrivalTime,
 		)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to set arrival time from record `%s`", rec.String())
@@ -91,10 +93,8 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 			rec.TrainID,
 			runStartMoment,
 			marta.Station(rec.Station),
-			ArrivalEstimate{
-				EventTime:            eventTime,
-				EstimatedArrivalTime: estimate,
-			},
+			eventTime,
+			estimate,
 		)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to add arrival estimate from record `%s`", rec.String())

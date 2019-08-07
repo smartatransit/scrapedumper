@@ -10,15 +10,8 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-//ArrivalEstimate encapsulates an estimated arrival time and
-//the time when the estimate was made
-type ArrivalEstimate struct {
-	EventTime            time.Time `json:"event_time"`
-	EstimatedArrivalTime time.Time `json:"estimated_arrival_time"`
-}
-
 //ArrivalEstimates implements SQL marshalling for an array of ArrivalEstimate's
-type ArrivalEstimates []ArrivalEstimate
+type ArrivalEstimates map[time.Time]time.Time
 
 //Scan implements the db/sql.Scanner interface
 func (ae *ArrivalEstimates) Scan(value interface{}) error {
@@ -27,11 +20,21 @@ func (ae *ArrivalEstimates) Scan(value interface{}) error {
 		return fmt.Errorf("expected string, got %T", value)
 	}
 
-	return json.Unmarshal([]byte(str), ae)
+	err := json.Unmarshal([]byte(str), ae)
+	// ae.ensure()
+	return err
+}
+
+func (ae *ArrivalEstimates) ensure() {
+	if ae == nil {
+		empty := ArrivalEstimates(map[time.Time]time.Time{})
+		ae = &empty
+	}
 }
 
 //Value implements the db/sql.Valuer interface
 func (ae ArrivalEstimates) Value() (driver.Value, error) {
+	// ae.ensure()
 	bs, err := json.Marshal(ae)
 	return string(bs), err
 }

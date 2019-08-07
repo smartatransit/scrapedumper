@@ -13,10 +13,10 @@ import (
 type Repository interface {
 	EnsureTables() error
 
-	GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (startTime time.Time, lastUpdated time.Time, err error)
-	EnsureArrivalRecord(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station) error
-	AddArrivalEstimate(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, estimate ArrivalEstimate) error
-	SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, estimate ArrivalEstimate) error
+	GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (startTime time.Time, mostRecentEventTime time.Time, err error)
+	EnsureArrivalRecord(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station) (err error)
+	AddArrivalEstimate(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, eventTime time.Time, estimate time.Time) (err error)
+	SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, eventTime time.Time, arrival time.Time) (err error)
 }
 
 //NewRepository creates a new postgres respotitory
@@ -42,7 +42,7 @@ func (a *RepositoryAgent) EnsureTables() error {
 //the most recent one and returns it's earliest start time (used as part of the run identifier) as
 //well as it's most recent one, which is used for determining whether it is stale. If no runs match
 //the metadata, it returns two zero time.Time objects and no error
-func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (startTime time.Time, lastUpdated time.Time, err error) {
+func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (startTime time.Time, mostRecentEventTime time.Time, err error) {
 	var arr Arrival
 	err = a.DB.Model(&Arrival{}).
 		Where("direction = ?", string(dir)).
@@ -61,7 +61,7 @@ func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line m
 	}
 
 	startTime = arr.RunFirstEventMoment
-	lastUpdated = arr.MostRecentEventTime
+	mostRecentEventTime = arr.MostRecentEventTime
 	return
 }
 
@@ -74,6 +74,7 @@ func (a *RepositoryAgent) EnsureArrivalRecord(dir marta.Direction, line marta.Li
 			TrainID:             trainID,
 			RunFirstEventMoment: runFirstEventMoment,
 			Station:             station,
+			ArrivalEstimates:    ArrivalEstimates(map[time.Time]time.Time{}),
 		}).Error
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -87,8 +88,8 @@ func (a *RepositoryAgent) EnsureArrivalRecord(dir marta.Direction, line marta.Li
 }
 
 //AddArrivalEstimate upserts the specified arrival estimate to the arrival record in question
-//TODO see if postgres supports array types that can be used to do this in a single query?
-func (a *RepositoryAgent) AddArrivalEstimate(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, estimate ArrivalEstimate) (err error) {
+//NOTE: this method is NOT thread-safe.
+func (a *RepositoryAgent) AddArrivalEstimate(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, eventTime time.Time, estimate time.Time) (err error) {
 	if err = a.EnsureArrivalRecord(dir, line, trainID, runFirstEventMoment, station); err != nil {
 		err = errors.Wrapf(err, "failed to ensure pre-existing arrival record for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339), station)
 		return
@@ -108,12 +109,10 @@ func (a *RepositoryAgent) AddArrivalEstimate(dir marta.Direction, line marta.Lin
 		return
 	}
 
-	//TODO don't add duplicate arrival estimates
-	//maybe this means using a map[string]string instead of a []ArrivalEstimate?
-
+	arr.ArrivalEstimates[eventTime] = estimate
 	err = a.DB.Model(&Arrival{Identifier: ident}).
-		Update("arrival_estimates", append(arr.ArrivalEstimates, estimate)).
-		Update("most_recent_event_time", estimate.EventTime).Error
+		Update("arrival_estimates", arr.ArrivalEstimates).
+		Update("most_recent_event_time", eventTime).Error
 	if err != nil {
 		err = errors.Wrapf(err, "failed to add arrival estimate for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339), station)
 		return
@@ -123,15 +122,16 @@ func (a *RepositoryAgent) AddArrivalEstimate(dir marta.Direction, line marta.Lin
 }
 
 //SetArrivalTime upserts the specified actual arrival time to the arrival record in question
-func (a *RepositoryAgent) SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, estimate ArrivalEstimate) (err error) {
+func (a *RepositoryAgent) SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, eventTime time.Time, arrivalTime time.Time) (err error) {
 	if err = a.EnsureArrivalRecord(dir, line, trainID, runFirstEventMoment, station); err != nil {
 		return
 	}
 
 	ident := IdentifierFor(dir, line, trainID, runFirstEventMoment, station)
 	err = a.DB.Model(&Arrival{Identifier: ident}).
-		Update("arrival_time", estimate.EstimatedArrivalTime).
-		Update("most_recent_event_time", estimate.EventTime).Error
+		// Where("arrival_time = ?", time.Time{}).
+		Update("arrival_time", arrivalTime).
+		Update("most_recent_event_time", eventTime).Error
 	if err != nil {
 		err = errors.Wrapf(err, "failed to set arrival time for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339), station)
 		return err
