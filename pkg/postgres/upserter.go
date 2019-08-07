@@ -5,6 +5,7 @@ import (
 
 	"github.com/bipol/scrapedumper/pkg/marta"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/pkg/errors"
 )
 
 //Upserter upserts a record to the database, while attempting to
@@ -32,15 +33,17 @@ type UpserterAgent struct {
 
 //AddRecordToDatabase upserts a record to the database, while
 //attempting to reconcile separate records from the same train run
-func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) error {
+func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 	runStartMoment, lastUpdated, err := a.repo.GetLatestRunStartMomentFor(marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID)
 	if err != nil {
-		return err
+		err = errors.Wrapf(err, "failed to scan record for schedule `%s`", rec.String())
+		return
 	}
 
 	eventTime, err := time.Parse(martaapi.MartaAPITimeFormat, rec.EventTime)
 	if err != nil {
-		return err
+		err = errors.Wrapf(err, "failed to parse record event time `%s`", rec.EventTime)
+		return
 	}
 
 	//if the run didn't match, or if the latest run is stale,
@@ -64,12 +67,15 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) error {
 			},
 		)
 		if err != nil {
-			return err
+			err = errors.Wrapf(err, "failed to set arrival time from record `%s`", rec.String())
+			return
 		}
 	} else {
-		estimate, err := time.Parse(martaapi.MartaAPITimeFormat, rec.NextArrival)
+		var estimate time.Time
+		estimate, err = time.Parse(martaapi.MartaAPITimeFormat, rec.NextArrival)
 		if err != nil {
-			return err
+			err = errors.Wrapf(err, "failed to parse record estiamted arrival time `%s`", rec.NextArrival)
+			return
 		}
 
 		err = a.repo.AddArrivalEstimate(
@@ -80,7 +86,8 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) error {
 			},
 		)
 		if err != nil {
-			return err
+			err = errors.Wrapf(err, "failed to add arrival estimate from record `%s`", rec.String())
+			return
 		}
 	}
 

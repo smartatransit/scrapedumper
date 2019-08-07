@@ -2,6 +2,7 @@ package martaapi
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -36,6 +37,10 @@ func (s Schedule) HasArrived() bool {
 	return (s.WaitingTime == "ARRIVING") ||
 		(s.WaitingTime == "ARRIVED") ||
 		(s.WaitingTime == "BOARDING")
+}
+
+func (s Schedule) String() string {
+	return fmt.Sprintf("%s:%s:%s:%s:%s:%t", s.Direction, s.Line, s.Destination, s.TrainID, s.EventTime, s.HasArrived())
 }
 
 const (
