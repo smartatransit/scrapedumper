@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -37,9 +38,10 @@ type Schedule struct {
 }
 
 func (s Schedule) HasArrived() bool {
-	return (s.WaitingTime == "ARRIVING") ||
-		(s.WaitingTime == "ARRIVED") ||
-		(s.WaitingTime == "BOARDING")
+	code := strings.ToUpper(s.WaitingTime)
+	return (code == "ARRIVING") ||
+		(code == "ARRIVED") ||
+		(code == "BOARDING")
 }
 
 func (s Schedule) String() string {

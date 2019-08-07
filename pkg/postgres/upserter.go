@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/bipol/scrapedumper/pkg/marta"
@@ -56,7 +55,6 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 	}
 
 	if rec.HasArrived() {
-		fmt.Println("bouta set arrival")
 		//TODO this is a potential source of error - there may be smarter ways to infer the arrival moment
 		arrivalTime := eventTime
 		err = a.repo.SetArrivalTime(
