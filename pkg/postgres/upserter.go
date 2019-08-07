@@ -49,7 +49,7 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 	//if the run didn't match, or if the latest run is stale,
 	//then this is the start of a new run
 	if runStartMoment == (time.Time{}) ||
-		lastUpdated.Before(time.Now().Add(-a.runLifetime)) {
+		lastUpdated.Before(eventTime.Add(-a.runLifetime)) {
 
 		runStartMoment = eventTime
 	}
@@ -78,8 +78,19 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 			return
 		}
 
+		//take the time part of estimate together with the date part of runStartMoment
+		estimate = time.Date(
+			runStartMoment.Year(), runStartMoment.Month(), runStartMoment.Day(),
+			estimate.Hour(), estimate.Minute(), estimate.Second(), estimate.Nanosecond(),
+			time.Local,
+		)
+
 		err = a.repo.AddArrivalEstimate(
-			marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID, runStartMoment, marta.Station(rec.Station),
+			marta.Direction(rec.Direction),
+			marta.Line(rec.Line),
+			rec.TrainID,
+			runStartMoment,
+			marta.Station(rec.Station),
 			ArrivalEstimate{
 				EventTime:            eventTime,
 				EstimatedArrivalTime: estimate,

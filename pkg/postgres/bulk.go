@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"sort"
+	"strings"
 
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/pkg/errors"
@@ -31,6 +33,26 @@ func NewBulkLoader(
 	}
 }
 
+type fileInfoList []os.FileInfo
+
+// Len is the number of elements in the collection.
+func (fil fileInfoList) Len() int {
+	return len(fil)
+}
+
+// Less reports whether the element with
+// index i should sort before the element with index j.
+func (fil fileInfoList) Less(i, j int) bool {
+	return strings.Compare(fil[i].Name(), fil[j].Name()) <= 0
+}
+
+// Swap swaps the elements with indexes i and j.
+func (fil fileInfoList) Swap(i, j int) {
+	t := fil[j]
+	fil[j] = fil[i]
+	fil[i] = t
+}
+
 //LoadDir loads all files in the specified directory
 func (a BulkLoaderAgent) LoadDir(dir string) (err error) {
 	infos, err := ioutil.ReadDir(dir)
@@ -38,6 +60,9 @@ func (a BulkLoaderAgent) LoadDir(dir string) (err error) {
 		err = errors.Wrapf(err, "failed to read directory contents for path `%s`", dir)
 		return
 	}
+
+	//sort files alphabetically, since their names are RFC3339 timestamps
+	sort.Sort(fileInfoList(infos))
 
 	for _, info := range infos {
 		if info.IsDir() {
