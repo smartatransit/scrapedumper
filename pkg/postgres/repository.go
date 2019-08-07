@@ -50,11 +50,6 @@ func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line m
 		Order("run_first_event_moment DESC").
 		Order("most_recent_event_time DESC").Limit(1).
 		Select("run_first_event_moment", "most_recent_event_time").Row()
-	if err = a.DB.Error; err != nil {
-		err = errors.Wrapf(err, "failed to query latest run start moment for dir `%s` line `%s` and train `%s`", dir, line, trainID)
-		return
-	}
-
 	if row == nil {
 		return
 	}
@@ -88,7 +83,7 @@ func (a *RepositoryAgent) EnsureArrivalRecord(dir marta.Direction, line marta.Li
 //AddArrivalEstimate upserts the specified arrival estimate to the arrival record in question
 //TODO see if postgres supports array types that can be used to do this in a single query?
 func (a *RepositoryAgent) AddArrivalEstimate(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, estimate ArrivalEstimate) (err error) {
-	if err := a.EnsureArrivalRecord(dir, line, trainID, runFirstEventMoment, station); err != nil {
+	if err = a.EnsureArrivalRecord(dir, line, trainID, runFirstEventMoment, station); err != nil {
 		return nil
 	}
 

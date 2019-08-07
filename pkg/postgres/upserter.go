@@ -34,15 +34,15 @@ type UpserterAgent struct {
 //AddRecordToDatabase upserts a record to the database, while
 //attempting to reconcile separate records from the same train run
 func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
-	runStartMoment, lastUpdated, err := a.repo.GetLatestRunStartMomentFor(marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to get latest run start moment for record `%s`", rec.String())
-		return
-	}
-
 	eventTime, err := time.Parse(martaapi.MartaAPITimeFormat, rec.EventTime)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to parse record event time `%s`", rec.EventTime)
+		return
+	}
+
+	runStartMoment, lastUpdated, err := a.repo.GetLatestRunStartMomentFor(marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to get latest run start moment for record `%s`", rec.String())
 		return
 	}
 
