@@ -9,6 +9,9 @@ import (
 	"github.com/jinzhu/gorm"
 
 	"github.com/bipol/scrapedumper/pkg/postgres"
+
+        //GORM postgres dialect
+        _ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 type options struct {
@@ -29,6 +32,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+	db.LogMode(true)
 
 	repo := postgres.NewRepository(db)
 	err = repo.EnsureTables()
