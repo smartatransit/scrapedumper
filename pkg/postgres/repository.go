@@ -42,19 +42,26 @@ func (a *RepositoryAgent) EnsureTables() error {
 //the most recent one and returns it's earliest start time (used as part of the run identifier) as
 //well as it's most recent one, which is used for determining whether it is stale. If no runs match
 //the metadata, it returns two zero time.Time objects and no error
-func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (startTime time.Time, lastUpdated time.Time, err error) {
-	row := a.DB.Model(&Arrival{}).
+func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (startTime time.Time, mostRecentEventTime time.Time, err error) {
+	var ts struct {
+		MostRecentEventTime time.Time `gorm:"type:timestamp"`
+		RunFirstEventMoment time.Time `gorm:"type:timestamp"`
+	}
+	err = a.DB.Model(&Arrival{}).
 		Where("direction = ?", string(dir)).
 		Where("line = ?", string(line)).
 		Where("train_id = ?", trainID).
 		Order("run_first_event_moment DESC").
 		Order("most_recent_event_time DESC").Limit(1).
-		Select("run_first_event_moment", "most_recent_event_time").Row()
-	if row == nil {
-		return
-	}
+		Select("run_first_event_moment", "most_recent_event_time").
+		First(&ts).Error
+	// if row == nil {
+	// 	return
+	// }
+	startTime = ts.RunFirstEventMoment
+	mostRecentEventTime = ts.MostRecentEventTime
 
-	err = row.Scan(&startTime, &lastUpdated)
+	// err = row.Scan(&startTime, &mostRecentEventTime)
 	err = errors.Wrapf(err, "failed to scan result for dir `%s` line `%s` and train `%s`", dir, line, trainID)
 	return
 }
