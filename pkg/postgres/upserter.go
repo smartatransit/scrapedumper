@@ -36,7 +36,7 @@ type UpserterAgent struct {
 func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 	runStartMoment, lastUpdated, err := a.repo.GetLatestRunStartMomentFor(marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID)
 	if err != nil {
-		err = errors.Wrapf(err, "failed to scan record for schedule `%s`", rec.String())
+		err = errors.Wrapf(err, "failed to get latest run start moment for record `%s`", rec.String())
 		return
 	}
 

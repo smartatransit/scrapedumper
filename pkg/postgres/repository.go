@@ -51,7 +51,7 @@ func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line m
 		Order("most_recent_event_time DESC").Limit(1).
 		Select("run_first_event_moment", "most_recent_event_time").Row()
 	if err = a.DB.Error; err != nil {
-		err = errors.Wrapf(err, "failed to get latest run start moment for dir `%s` line `%s` and train `%s`", dir, line, trainID)
+		err = errors.Wrapf(err, "failed to query latest run start moment for dir `%s` line `%s` and train `%s`", dir, line, trainID)
 		return
 	}
 
@@ -60,6 +60,7 @@ func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line m
 	}
 
 	err = row.Scan(&startTime, &lastUpdated)
+	err = errors.Wrapf(err, "failed to scan result for dir `%s` line `%s` and train `%s`", dir, line, trainID)
 	return
 }
 
