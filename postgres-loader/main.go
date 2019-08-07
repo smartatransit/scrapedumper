@@ -32,7 +32,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
-	db.LogMode(true)
 
 	repo := postgres.NewRepository(db)
 	err = repo.EnsureTables()
