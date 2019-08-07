@@ -54,6 +54,9 @@ func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line m
 		err = errors.Wrapf(err, "failed to query latest run start moment for dir `%s` line `%s` and train `%s`", dir, line, trainID)
 		return
 	}
+	if rows == nil {
+		return
+	}
 	defer rows.Close()
 
 	if rows.Next() {

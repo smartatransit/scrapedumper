@@ -9,8 +9,11 @@ import (
 	"go.uber.org/zap"
 )
 
+//MartaAPIDatetimeFormat is the datetime format used by the MARTA API
+const MartaAPIDatetimeFormat = "1/2/2006 " + MartaAPITimeFormat
+
 //MartaAPITimeFormat is the time format used by the MARTA API
-const MartaAPITimeFormat = "1/2/2006 3:04:05 PM"
+const MartaAPITimeFormat = "3:04:05 PM"
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ScheduleFinder
 type ScheduleFinder interface {
