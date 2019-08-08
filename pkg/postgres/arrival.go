@@ -21,20 +21,11 @@ func (ae *ArrivalEstimates) Scan(value interface{}) error {
 	}
 
 	err := json.Unmarshal([]byte(str), ae)
-	// ae.ensure()
 	return err
-}
-
-func (ae *ArrivalEstimates) ensure() {
-	if ae == nil {
-		empty := ArrivalEstimates(map[time.Time]time.Time{})
-		ae = &empty
-	}
 }
 
 //Value implements the db/sql.Valuer interface
 func (ae ArrivalEstimates) Value() (driver.Value, error) {
-	// ae.ensure()
 	bs, err := json.Marshal(ae)
 	return string(bs), err
 }
