@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Dump", func() {
+var _ = Describe("Upserter", func() {
 	var (
 		repo *postgresfakes.FakeRepository
 
@@ -27,7 +27,7 @@ var _ = Describe("Dump", func() {
 		upserter = postgres.NewUpserter(repo, 10*time.Minute)
 	})
 
-	Context("AddRecordToDatabase", func() {
+	Describe("AddRecordToDatabase", func() {
 		var (
 			rec     martaapi.Schedule
 			callErr error

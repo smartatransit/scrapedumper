@@ -4,7 +4,6 @@ require (
 	cloud.google.com/go v0.41.0 // indirect
 	github.com/DATA-DOG/go-sqlmock v1.3.3
 	github.com/aws/aws-sdk-go v1.21.5
-	github.com/davecgh/go-spew v1.1.1
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jinzhu/gorm v1.9.10

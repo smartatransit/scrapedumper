@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/bipol/scrapedumper/pkg/marta"
-	"github.com/jinzhu/gorm"
 )
 
 func init() {
@@ -49,28 +48,20 @@ func (ae ArrivalEstimates) Value() (driver.Value, error) {
 //Arrival encodes information about a particular arrival of a train at a station,
 //including the actual arrival time and any arrival estimates made beforehand.
 type Arrival struct {
-	Identifier         string `gorm:"type:text;PRIMARY_KEY"`
-	RunIdentifier      string `gorm:"type:text;index:run_id_idx"`
-	RunGroupIdentifier string `gorm:"type:text;index:run_group_id_idx"`
+	Identifier         string
+	RunIdentifier      string
+	RunGroupIdentifier string
 
-	MostRecentEventTime time.Time `gorm:"type:timestamp"`
+	MostRecentEventTime time.Time
 
-	Direction           marta.Direction `gorm:"type:text;index:runs"`
-	Line                marta.Line      `gorm:"type:text;index:runs"`
-	TrainID             string          `gorm:"type:text;index:runs"`
-	RunFirstEventMoment time.Time       `gorm:"type:timestamp;index:runs"` //TODO descending or something?
-	Station             marta.Station   `gorm:"type:text"`
+	Direction           marta.Direction
+	Line                marta.Line
+	TrainID             string
+	RunFirstEventMoment time.Time
+	Station             marta.Station
 
-	ArrivalTime      time.Time        `gorm:"type:timestamp"`
-	ArrivalEstimates ArrivalEstimates `gorm:"type:jsonb"` //need a Valuer implementation
-}
-
-//BeforeCreate sets up the composite identifiers
-func (a *Arrival) BeforeCreate(scope *gorm.Scope) (err error) {
-	a.Identifier = IdentifierFor(a.Direction, a.Line, a.TrainID, a.RunFirstEventMoment, a.Station)
-	a.RunIdentifier = RunIdentifierFor(a.Direction, a.Line, a.TrainID, a.RunFirstEventMoment)
-	a.RunGroupIdentifier = RunGroupIdentifierFor(a.Direction, a.Line, a.TrainID)
-	return
+	ArrivalTime      time.Time
+	ArrivalEstimates ArrivalEstimates
 }
 
 //IdentifierFor creates a identifier for the given metadata

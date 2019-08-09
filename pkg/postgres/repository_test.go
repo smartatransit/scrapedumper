@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Dump", func() {
+var _ = Describe("Repository", func() {
 	var (
 		db    *sql.DB
 		smock sqlmock.Sqlmock
@@ -32,7 +32,7 @@ var _ = Describe("Dump", func() {
 		repo = postgres.NewRepository(db)
 	})
 
-	Context("EnsureTables", func() {
+	Describe("EnsureTables", func() {
 		var (
 			callErr error
 
@@ -52,8 +52,7 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 	"station" text,
 	"arrival_time" timestamp,
 	"arrival_estimates" jsonb,
-	PRIMARY KEY \("identifier"\)
-\)`)
+	PRIMARY KEY \("identifier"\)\)`)
 		})
 		JustBeforeEach(func() {
 			callErr = repo.EnsureTables()
@@ -68,7 +67,7 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 		})
 	})
 
-	Context("GetLatestRunStartMomentFor", func() {
+	Describe("GetLatestRunStartMomentFor", func() {
 		var (
 			runFirstEventMoment time.Time
 			mostRecentEventTime time.Time
@@ -126,7 +125,7 @@ LIMIT 1`).
 		})
 	})
 
-	Context("EnsureArrivalRecord", func() {
+	Describe("EnsureArrivalRecord", func() {
 		var (
 			callErr error
 
@@ -177,7 +176,7 @@ ON CONFLICT DO NOTHING`).
 		})
 	})
 
-	Context("AddArrivalEstimate", func() {
+	Describe("AddArrivalEstimate", func() {
 		var (
 			callErr error
 
@@ -222,7 +221,7 @@ WHERE "arrivals"."identifier" = \$3`).
 		})
 	})
 
-	Context("SetArrivalTime", func() {
+	Describe("SetArrivalTime", func() {
 		var (
 			callErr error
 

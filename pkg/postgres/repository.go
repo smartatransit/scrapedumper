@@ -49,8 +49,10 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 	"station" text,
 	"arrival_time" timestamp,
 	"arrival_estimates" jsonb,
-	PRIMARY KEY ("identifier")
-)`)
+	PRIMARY KEY ("identifier"))`)
+
+	//TODO create indexes?
+
 	return errors.Wrap(err, "failed to ensure arrivals table")
 }
 
