@@ -10,6 +10,7 @@ import (
 
 //Upserter upserts a record to the database, while attempting to
 //reconcile separate records from the same train run
+//go:generate counterfeiter . Upserter
 type Upserter interface {
 	AddRecordToDatabase(martaapi.Schedule) error
 }
@@ -54,6 +55,17 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 		runStartMoment = eventTime
 	}
 
+	if err = a.repo.EnsureArrivalRecord(
+		marta.Direction(rec.Direction),
+		marta.Line(rec.Line),
+		rec.TrainID,
+		runStartMoment,
+		marta.Station(rec.Station),
+	); err != nil {
+		err = errors.Wrapf(err, "failed to ensure pre-existing arrival record for `%s`", rec.String())
+		return
+	}
+
 	if rec.HasArrived() {
 		//TODO this is a potential source of error - there may be smarter ways to infer the arrival moment
 		arrivalTime := eventTime
@@ -82,7 +94,7 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 		estimate = time.Date(
 			runStartMoment.Year(), runStartMoment.Month(), runStartMoment.Day(),
 			estimate.Hour(), estimate.Minute(), estimate.Second(), estimate.Nanosecond(),
-			time.Local,
+			EasternTime,
 		)
 
 		err = a.repo.AddArrivalEstimate(
