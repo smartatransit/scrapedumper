@@ -1,17 +1,17 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/jinzhu/gorm"
 
 	"github.com/bipol/scrapedumper/pkg/postgres"
 
-	//GORM postgres dialect
-	_ "github.com/jinzhu/gorm/dialects/postgres"
+	//database/sql driver
+	_ "github.com/lib/pq"
 )
 
 type options struct {
@@ -27,12 +27,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db, err := gorm.Open("postgres", opts.PostgresConnectionString)
+	db, err := sql.Open("postgres", opts.PostgresConnectionString)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
-	db.LogMode(true)
 
 	repo := postgres.NewRepository(db)
 	err = repo.EnsureTables()

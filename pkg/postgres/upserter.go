@@ -35,7 +35,7 @@ type UpserterAgent struct {
 //AddRecordToDatabase upserts a record to the database, while
 //attempting to reconcile separate records from the same train run
 func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
-	eventTime, err := time.Parse(martaapi.MartaAPIDatetimeFormat, rec.EventTime)
+	eventTime, err := time.ParseInLocation(martaapi.MartaAPIDatetimeFormat, rec.EventTime, EasternTime)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to parse record event time `%s`", rec.EventTime)
 		return
@@ -84,7 +84,7 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 		}
 	} else {
 		var estimate time.Time
-		estimate, err = time.Parse(martaapi.MartaAPITimeFormat, rec.NextArrival)
+		estimate, err = time.ParseInLocation(martaapi.MartaAPITimeFormat, rec.NextArrival, EasternTime)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to parse record estimated arrival time `%s`", rec.NextArrival)
 			return
