@@ -7,7 +7,6 @@ import (
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/postgres"
 	"github.com/bipol/scrapedumper/pkg/postgres/postgresfakes"
-	"github.com/davecgh/go-spew/spew"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -89,6 +88,7 @@ var _ = Describe("Dump", func() {
 				})
 				It("fails", func() {
 					Expect(callErr).To(MatchError("failed to ensure pre-existing arrival record for `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: query failed"))
+
 					_, _, _, runStartMoment, _ := repo.EnsureArrivalRecordArgsForCall(0)
 					Expect(runStartMoment).To(Equal(time.Date(2019, time.June, 18, 21, 41, 2, 0, postgres.EasternTime)))
 				})
@@ -106,9 +106,6 @@ var _ = Describe("Dump", func() {
 					Expect(callErr).To(MatchError("failed to set arrival time from record `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:true`: query failed"))
 				})
 			})
-			When("all goes well", func() {
-				//TODO
-			})
 		})
 		When("the train has not arrived", func() {
 			When("the next arrival time is malformed", func() {
@@ -116,7 +113,6 @@ var _ = Describe("Dump", func() {
 					rec.NextArrival = "asdf"
 				})
 				It("fails", func() {
-					spew.Dump(callErr.Error())
 					Expect(callErr).To(MatchError("failed to parse record estimated arrival time `asdf`: parsing time \"asdf\" as \"3:04:05 PM\": cannot parse \"asdf\" as \"3\""))
 				})
 			})
@@ -125,12 +121,16 @@ var _ = Describe("Dump", func() {
 					repo.AddArrivalEstimateReturns(errors.New("query failed"))
 				})
 				It("fails", func() {
-					spew.Dump(callErr.Error())
 					Expect(callErr).To(MatchError("failed to add arrival estimate from record `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: query failed"))
 				})
 			})
 			When("all goes well", func() {
-				//TODO
+				It("succeeds", func() {
+					Expect(callErr).To(BeNil())
+
+					_, _, _, _, _, _, estimate := repo.AddArrivalEstimateArgsForCall(0)
+					Expect(estimate).To(Equal(time.Date(2019, time.June, 18, 21, 45, 2, 0, postgres.EasternTime)))
+				})
 			})
 		})
 	})
