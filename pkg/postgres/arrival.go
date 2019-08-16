@@ -21,11 +21,21 @@ func init() {
 var EasternTime *time.Location
 
 //ArrivalEstimates implements SQL marshalling for an array of ArrivalEstimate's
-type ArrivalEstimates map[time.Time]time.Time
+type ArrivalEstimates map[string]string
 
-//SingleEstimate produces an ArrivalEstimates with one estimate
-func SingleEstimate(eventTime time.Time, estimate time.Time) ArrivalEstimates {
-	return ArrivalEstimates(map[time.Time]time.Time{eventTime: estimate})
+//AddEstimate adds an estiamte
+func (aes ArrivalEstimates) AddEstimate(eventTime time.Time, estimate time.Time) bool {
+	evtStr := eventTime.Format(time.RFC3339)
+	estStr := estimate.Format(time.RFC3339)
+
+	// if this event time is already in the map, don't overwrite
+	if _, ok := aes[evtStr]; ok {
+		return false
+	}
+
+	aes[evtStr] = estStr
+
+	return true
 }
 
 //Scan implements the db/sql.Scanner interface
@@ -43,25 +53,6 @@ func (ae *ArrivalEstimates) Scan(value interface{}) error {
 func (ae ArrivalEstimates) Value() (driver.Value, error) {
 	bs, err := json.Marshal(ae)
 	return string(bs), err
-}
-
-//Arrival encodes information about a particular arrival of a train at a station,
-//including the actual arrival time and any arrival estimates made beforehand.
-type Arrival struct {
-	Identifier         string
-	RunIdentifier      string
-	RunGroupIdentifier string
-
-	MostRecentEventTime time.Time
-
-	Direction           marta.Direction
-	Line                marta.Line
-	TrainID             string
-	RunFirstEventMoment time.Time
-	Station             marta.Station
-
-	ArrivalTime      time.Time
-	ArrivalEstimates ArrivalEstimates
 }
 
 //IdentifierFor creates a identifier for the given metadata

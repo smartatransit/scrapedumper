@@ -51,8 +51,9 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 	"run_first_event_moment" timestamp,
 	"station" text,
 	"arrival_time" timestamp,
-	"arrival_estimates" jsonb,
-	PRIMARY KEY \("identifier"\)\)`)
+	"arrival_estimates" text,
+	PRIMARY KEY \("identifier"\)
+\)`)
 		})
 		JustBeforeEach(func() {
 			callErr = repo.EnsureTables()
@@ -148,7 +149,7 @@ ON CONFLICT DO NOTHING`).
 					time.Date(2019, time.August, 5, 18, 15, 16, 0, postgres.EasternTime),
 					"FIVE POINTS",
 					time.Time{},
-					postgres.ArrivalEstimates(map[time.Time]time.Time{}),
+					postgres.ArrivalEstimates(map[string]string{}),
 				)
 			exec.WillReturnResult(sqlmock.NewResult(0, 0))
 		})
@@ -180,43 +181,86 @@ ON CONFLICT DO NOTHING`).
 		var (
 			callErr error
 
-			exec *sqlmock.ExpectedExec
+			query *sqlmock.ExpectedQuery
+			rows  *sqlmock.Rows
+
+			exec      *sqlmock.ExpectedExec
+			eventTime time.Time
+
+			expectedJSONString string
 		)
 		BeforeEach(func() {
+			query = smock.ExpectQuery(`
+SELECT arrival_estimates
+FROM "arrivals"
+WHERE "arrivals"\."identifier" = \$1
+LIMIT 1`).
+				WithArgs("N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS")
+
+			rows = sqlmock.NewRows([]string{"arrival_estimates"})
+			rows.AddRow(`{"2019-08-05T19:15:16-04:00":"2019-08-05T22:15:16-04:00"}`)
+			query.WillReturnRows(rows)
+
 			exec = smock.ExpectExec(`
 UPDATE "arrivals"
 SET \("arrival_estimates", "most_recent_event_time"\)
-  = \("arrival_estimates" || \$1, \$2\)
-WHERE "arrivals"."identifier" = \$3`).
-				WithArgs(
-					`{"2019-08-05T20:15:16-04:00":"2019-08-05T22:15:16-04:00"}`,
-					time.Date(2019, time.August, 5, 20, 15, 16, 0, postgres.EasternTime),
-					"N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS",
-				)
+  = \(\$1, \$2\)
+WHERE "arrivals"\."identifier" = \$3`)
 			exec.WillReturnResult(sqlmock.NewResult(0, 0))
+
+			eventTime = time.Date(2019, time.August, 5, 20, 15, 16, 0, postgres.EasternTime)
+			expectedJSONString = `{"2019-08-05T19:15:16-04:00":"2019-08-05T22:15:16-04:00","2019-08-05T20:15:16-04:00":"2019-08-05T22:15:16-04:00"}`
 		})
 		JustBeforeEach(func() {
+			exec.WithArgs(
+				expectedJSONString,
+				time.Date(2019, time.August, 5, 20, 15, 16, 0, postgres.EasternTime),
+				"N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS",
+			)
+
 			callErr = repo.AddArrivalEstimate(
 				marta.Direction("N"),
 				marta.Line("GOLD"),
 				"193230",
 				time.Date(2019, time.August, 5, 18, 15, 16, 0, postgres.EasternTime),
 				marta.Station("FIVE POINTS"),
-				time.Date(2019, time.August, 5, 20, 15, 16, 0, postgres.EasternTime),
+				eventTime,
 				time.Date(2019, time.August, 5, 22, 15, 16, 0, postgres.EasternTime),
 			)
 		})
 		When("the query fails", func() {
 			BeforeEach(func() {
-				exec.WillReturnError(errors.New("query failed"))
+				query.WillReturnError(errors.New("query failed"))
 			})
 			It("fails", func() {
-				Expect(callErr).To(MatchError("failed to add arrival estimate for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00` and station `FIVE POINTS`: query failed"))
+				Expect(callErr).To(MatchError("failed to get arrival for `N` line `GOLD` and train `193230`: query failed"))
+			})
+		})
+		When("the update fails", func() {
+			BeforeEach(func() {
+				exec.WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to add arrival estimate for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00` and station `FIVE POINTS`: exec failed"))
 			})
 		})
 		When("all goes well", func() {
-			It("succeeds", func() {
-				Expect(callErr).To(BeNil())
+			When("there's no collision", func() {
+				BeforeEach(func() {
+					expectedJSONString = `{"2019-08-05T19:15:16-04:00":"2019-08-05T22:15:16-04:00","2019-08-05T20:15:16-04:00":"2019-08-05T22:15:16-04:00"}`
+				})
+				It("succeeds", func() {
+					Expect(callErr).To(BeNil())
+				})
+			})
+
+			When("the event time already has an estimate recorded", func() {
+				BeforeEach(func() {
+					eventTime = time.Date(2019, time.August, 5, 19, 15, 16, 0, postgres.EasternTime)
+				})
+				It("fails", func() {
+					Expect(callErr).To(BeNil())
+				})
 			})
 		})
 	})

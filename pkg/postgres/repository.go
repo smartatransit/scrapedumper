@@ -48,8 +48,9 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 	"run_first_event_moment" timestamp,
 	"station" text,
 	"arrival_time" timestamp,
-	"arrival_estimates" jsonb,
-	PRIMARY KEY ("identifier"))`)
+	"arrival_estimates" text,
+	PRIMARY KEY ("identifier")
+)`)
 
 	//TODO create indexes?
 
@@ -99,7 +100,7 @@ ON CONFLICT DO NOTHING`,
 		runFirstEventMoment,
 		station,
 		time.Time{}, //arrival_time
-		ArrivalEstimates(map[time.Time]time.Time{}),
+		ArrivalEstimates(map[string]string{}),
 	)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to ensure arrival for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339), station)
@@ -111,13 +112,30 @@ ON CONFLICT DO NOTHING`,
 //AddArrivalEstimate upserts the specified arrival estimate to the arrival record in question
 //NOTE: this method is NOT thread-safe.
 func (a *RepositoryAgent) AddArrivalEstimate(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, eventTime time.Time, estimate time.Time) (err error) {
-	// the || operator on a jsonb column merges the keys of the two json objects
+	row := a.DB.QueryRow(`
+SELECT arrival_estimates
+FROM "arrivals"
+WHERE "arrivals"."identifier" = $1
+LIMIT 1`,
+		IdentifierFor(dir, line, trainID, runFirstEventMoment, station),
+	)
+
+	var arrivalEstimates ArrivalEstimates
+	err = row.Scan(&arrivalEstimates)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to get arrival for `%s` line `%s` and train `%s`", dir, line, trainID)
+		return
+	}
+	if ok := arrivalEstimates.AddEstimate(eventTime, estimate); !ok {
+		return
+	}
+
 	_, err = a.DB.Exec(`
 UPDATE "arrivals"
 SET ("arrival_estimates", "most_recent_event_time")
-  = ("arrival_estimates" || $1, $2)
+  = ($1, $2)
 WHERE "arrivals"."identifier" = $3`,
-		SingleEstimate(eventTime, estimate),
+		arrivalEstimates,
 		eventTime,
 		IdentifierFor(dir, line, trainID, runFirstEventMoment, station),
 	)
