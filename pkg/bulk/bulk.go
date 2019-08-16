@@ -19,17 +19,35 @@ type DirectoryDumper interface {
 	DumpDirectory(ctx context.Context, dir string) error
 }
 
+//FileSystem minimal filesystem interface for the DirectoryDumper
+//go:generate counterfeiter . FileSystem
+type FileSystem interface {
+	Open(name string) (afero.File, error)
+}
+
+//File is used to generate fakes for testing
+//go:generate counterfeiter . File
+type File interface {
+	afero.File
+}
+
+//FileInfo is used to generate fakes for testing
+//go:generate counterfeiter . FileInfo
+type FileInfo interface {
+	os.FileInfo
+}
+
 //DirectoryDumperAgent implements DirectoryDumper
 type DirectoryDumperAgent struct {
-	fs     afero.Fs
+	fs     FileSystem
 	dumper dumper.Dumper
 }
 
 //NewDirectoryDumper creates a new DirectoryDumper
 func NewDirectoryDumper(
-	fs afero.Fs,
+	fs FileSystem,
 	dumper dumper.Dumper,
-) DirectoryDumper {
+) DirectoryDumperAgent {
 	return DirectoryDumperAgent{
 		fs:     fs,
 		dumper: dumper,
@@ -80,15 +98,15 @@ func (a DirectoryDumperAgent) DumpDirectory(ctx context.Context, dir string) (er
 			continue
 		}
 
-		var file *os.File
+		var file afero.File
 		path := path.Join(dir, finfo.Name())
-		file, err = os.Open(path)
+		file, err = a.fs.Open(path)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to open file `%s` for reading", path)
 			return
 		}
 
-		err = a.dumper.Dump(ctx, file, file.Name())
+		err = a.dumper.Dump(ctx, file, finfo.Name())
 		if err != nil {
 			err = errors.Wrapf(err, "failed to dump contents of file `%s`", path)
 			return
