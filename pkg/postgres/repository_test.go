@@ -85,10 +85,10 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 			query = smock.ExpectQuery(`
 SELECT run_first_event_moment, most_recent_event_moment
 FROM "arrivals"
-WHERE run_group_identifier = \$1
+WHERE run_group_identifier = \$1 AND most_recent_event_moment < \$2
 ORDER BY run_first_event_moment DESC, most_recent_event_moment DESC, "arrivals"."identifier" ASC
 LIMIT 1`).
-				WithArgs("N_GOLD_193230")
+				WithArgs("N_GOLD_193230", "2019-08-05T18:15:16-04:00")
 
 			rows = sqlmock.NewRows([]string{"run_first_event_moment", "most_recent_event_moment"})
 			query.WillReturnRows(rows)
@@ -98,6 +98,7 @@ LIMIT 1`).
 				martaapi.Direction("N"),
 				martaapi.Line("GOLD"),
 				"193230",
+				easternDate(2019, time.August, 5, 18, 15, 16, 0),
 			)
 		})
 		When("the query fails", func() {

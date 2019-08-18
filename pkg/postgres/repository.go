@@ -13,7 +13,7 @@ import (
 type Repository interface {
 	EnsureTables() error
 
-	GetLatestRunStartMomentFor(dir martaapi.Direction, line martaapi.Line, trainID string) (runFirstEventMoment EasternTime, mostRecentEventTime EasternTime, err error)
+	GetLatestRunStartMomentFor(dir martaapi.Direction, line martaapi.Line, trainID string, asOfMoment EasternTime) (runFirstEventMoment EasternTime, mostRecentEventTime EasternTime, err error)
 	EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station) (err error)
 	AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error)
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
@@ -60,17 +60,15 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 //the most recent one and returns it's earliest start time (used as part of the run identifier) as
 //well as it's most recent one, which is used for determining whether it is stale. If no runs match
 //the metadata, it returns two zero time.Time objects and no error
-func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir martaapi.Direction, line martaapi.Line, trainID string) (runFirstEventMoment EasternTime, mostRecentEventTime EasternTime, err error) {
-	//TODO to allow for data to come in out of order, grab the latest _among_
-	//those that occurred before the currently considered eventTime
-
+func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir martaapi.Direction, line martaapi.Line, trainID string, asOfMoment EasternTime) (runFirstEventMoment EasternTime, mostRecentEventTime EasternTime, err error) {
 	row := a.DB.QueryRow(`
 SELECT run_first_event_moment, most_recent_event_moment
 FROM "arrivals"
-WHERE run_group_identifier = $1
+WHERE run_group_identifier = $1 AND most_recent_event_moment < $2
 ORDER BY run_first_event_moment DESC, most_recent_event_moment DESC, "arrivals"."identifier" ASC
 LIMIT 1`,
 		RunGroupIdentifierFor(dir, line, trainID),
+		asOfMoment,
 	)
 
 	err = row.Scan(&runFirstEventMoment, &mostRecentEventTime)

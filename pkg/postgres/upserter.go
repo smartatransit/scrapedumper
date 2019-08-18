@@ -52,7 +52,7 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 
 	eventTime := EasternTime(goEventTime)
 
-	runFirstEventMoment, mostRecentEventMoment, err := a.repo.GetLatestRunStartMomentFor(martaapi.Direction(rec.Direction), martaapi.Line(rec.Line), rec.TrainID)
+	runFirstEventMoment, mostRecentEventMoment, err := a.repo.GetLatestRunStartMomentFor(martaapi.Direction(rec.Direction), martaapi.Line(rec.Line), rec.TrainID, eventTime)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to get latest run start moment for record `%s`", rec.String())
 		return

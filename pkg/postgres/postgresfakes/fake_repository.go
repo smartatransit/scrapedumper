@@ -51,12 +51,13 @@ type FakeRepository struct {
 	ensureTablesReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetLatestRunStartMomentForStub        func(martaapi.Direction, martaapi.Line, string) (postgres.EasternTime, postgres.EasternTime, error)
+	GetLatestRunStartMomentForStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime) (postgres.EasternTime, postgres.EasternTime, error)
 	getLatestRunStartMomentForMutex       sync.RWMutex
 	getLatestRunStartMomentForArgsForCall []struct {
 		arg1 martaapi.Direction
 		arg2 martaapi.Line
 		arg3 string
+		arg4 postgres.EasternTime
 	}
 	getLatestRunStartMomentForReturns struct {
 		result1 postgres.EasternTime
@@ -271,18 +272,19 @@ func (fake *FakeRepository) EnsureTablesReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeRepository) GetLatestRunStartMomentFor(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string) (postgres.EasternTime, postgres.EasternTime, error) {
+func (fake *FakeRepository) GetLatestRunStartMomentFor(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string, arg4 postgres.EasternTime) (postgres.EasternTime, postgres.EasternTime, error) {
 	fake.getLatestRunStartMomentForMutex.Lock()
 	ret, specificReturn := fake.getLatestRunStartMomentForReturnsOnCall[len(fake.getLatestRunStartMomentForArgsForCall)]
 	fake.getLatestRunStartMomentForArgsForCall = append(fake.getLatestRunStartMomentForArgsForCall, struct {
 		arg1 martaapi.Direction
 		arg2 martaapi.Line
 		arg3 string
-	}{arg1, arg2, arg3})
-	fake.recordInvocation("GetLatestRunStartMomentFor", []interface{}{arg1, arg2, arg3})
+		arg4 postgres.EasternTime
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("GetLatestRunStartMomentFor", []interface{}{arg1, arg2, arg3, arg4})
 	fake.getLatestRunStartMomentForMutex.Unlock()
 	if fake.GetLatestRunStartMomentForStub != nil {
-		return fake.GetLatestRunStartMomentForStub(arg1, arg2, arg3)
+		return fake.GetLatestRunStartMomentForStub(arg1, arg2, arg3, arg4)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2, ret.result3
@@ -297,17 +299,17 @@ func (fake *FakeRepository) GetLatestRunStartMomentForCallCount() int {
 	return len(fake.getLatestRunStartMomentForArgsForCall)
 }
 
-func (fake *FakeRepository) GetLatestRunStartMomentForCalls(stub func(martaapi.Direction, martaapi.Line, string) (postgres.EasternTime, postgres.EasternTime, error)) {
+func (fake *FakeRepository) GetLatestRunStartMomentForCalls(stub func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime) (postgres.EasternTime, postgres.EasternTime, error)) {
 	fake.getLatestRunStartMomentForMutex.Lock()
 	defer fake.getLatestRunStartMomentForMutex.Unlock()
 	fake.GetLatestRunStartMomentForStub = stub
 }
 
-func (fake *FakeRepository) GetLatestRunStartMomentForArgsForCall(i int) (martaapi.Direction, martaapi.Line, string) {
+func (fake *FakeRepository) GetLatestRunStartMomentForArgsForCall(i int) (martaapi.Direction, martaapi.Line, string, postgres.EasternTime) {
 	fake.getLatestRunStartMomentForMutex.RLock()
 	defer fake.getLatestRunStartMomentForMutex.RUnlock()
 	argsForCall := fake.getLatestRunStartMomentForArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *FakeRepository) GetLatestRunStartMomentForReturns(result1 postgres.EasternTime, result2 postgres.EasternTime, result3 error) {
