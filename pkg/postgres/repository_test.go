@@ -44,13 +44,13 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 \(	"identifier" text,
 	"run_identifier" text,
 	"run_group_identifier" text,
-	"most_recent_event_time" timestamp,
+	"most_recent_event_moment" text,
 	"direction" text,
 	"line" text,
 	"train_id" text,
-	"run_first_event_moment" timestamp,
+	"run_first_event_moment" text,
 	"station" text,
-	"arrival_time" timestamp,
+	"arrival_time" text,
 	"arrival_estimates" text,
 	PRIMARY KEY \("identifier"\)
 \)`)
@@ -79,14 +79,14 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 		)
 		BeforeEach(func() {
 			query = smock.ExpectQuery(`
-SELECT run_first_event_moment, most_recent_event_time
+SELECT run_first_event_moment, most_recent_event_moment
 FROM "arrivals"
 WHERE run_group_identifier = \$1
-ORDER BY run_first_event_moment DESC, most_recent_event_time DESC, "arrivals"."identifier" ASC
+ORDER BY run_first_event_moment DESC, most_recent_event_moment DESC, "arrivals"."identifier" ASC
 LIMIT 1`).
 				WithArgs("N_GOLD_193230")
 
-			rows = sqlmock.NewRows([]string{"run_first_event_moment", "most_recent_event_time"})
+			rows = sqlmock.NewRows([]string{"run_first_event_moment", "most_recent_event_moment"})
 			query.WillReturnRows(rows)
 		})
 		JustBeforeEach(func() {
@@ -135,7 +135,7 @@ LIMIT 1`).
 		BeforeEach(func() {
 			exec = smock.ExpectExec(`
 INSERT INTO "arrivals"
-\("identifier", "run_identifier", "run_group_identifier", "most_recent_event_time", "direction", "line", "train_id", "run_first_event_moment", "station", "arrival_time", "arrival_estimates"\)
+\("identifier", "run_identifier", "run_group_identifier", "most_recent_event_moment", "direction", "line", "train_id", "run_first_event_moment", "station", "arrival_time", "arrival_estimates"\)
 VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11\)
 ON CONFLICT DO NOTHING`).
 				WithArgs(
@@ -203,7 +203,7 @@ LIMIT 1`).
 
 			exec = smock.ExpectExec(`
 UPDATE "arrivals"
-SET \("arrival_estimates", "most_recent_event_time"\)
+SET \("arrival_estimates", "most_recent_event_moment"\)
   = \(\$1, \$2\)
 WHERE "arrivals"\."identifier" = \$3`)
 			exec.WillReturnResult(sqlmock.NewResult(0, 0))
@@ -274,7 +274,7 @@ WHERE "arrivals"\."identifier" = \$3`)
 		BeforeEach(func() {
 			exec = smock.ExpectExec(`
 UPDATE "arrivals"
-SET \("arrival_time", "most_recent_event_time"\)
+SET \("arrival_time", "most_recent_event_moment"\)
   = \(\$1, \$2\)
 WHERE "arrivals"."identifier" = \$3
   AND "arrival_time" = \$4`).
