@@ -3,23 +3,22 @@ package postgresfakes
 
 import (
 	"sync"
-	"time"
 
-	"github.com/bipol/scrapedumper/pkg/marta"
+	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/postgres"
 )
 
 type FakeRepository struct {
-	AddArrivalEstimateStub        func(marta.Direction, marta.Line, string, time.Time, marta.Station, time.Time, time.Time) error
+	AddArrivalEstimateStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station, postgres.EasternTime, postgres.EasternTime) error
 	addArrivalEstimateMutex       sync.RWMutex
 	addArrivalEstimateArgsForCall []struct {
-		arg1 marta.Direction
-		arg2 marta.Line
+		arg1 martaapi.Direction
+		arg2 martaapi.Line
 		arg3 string
-		arg4 time.Time
-		arg5 marta.Station
-		arg6 time.Time
-		arg7 time.Time
+		arg4 postgres.EasternTime
+		arg5 martaapi.Station
+		arg6 postgres.EasternTime
+		arg7 postgres.EasternTime
 	}
 	addArrivalEstimateReturns struct {
 		result1 error
@@ -27,14 +26,14 @@ type FakeRepository struct {
 	addArrivalEstimateReturnsOnCall map[int]struct {
 		result1 error
 	}
-	EnsureArrivalRecordStub        func(marta.Direction, marta.Line, string, time.Time, marta.Station) error
+	EnsureArrivalRecordStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station) error
 	ensureArrivalRecordMutex       sync.RWMutex
 	ensureArrivalRecordArgsForCall []struct {
-		arg1 marta.Direction
-		arg2 marta.Line
+		arg1 martaapi.Direction
+		arg2 martaapi.Line
 		arg3 string
-		arg4 time.Time
-		arg5 marta.Station
+		arg4 postgres.EasternTime
+		arg5 martaapi.Station
 	}
 	ensureArrivalRecordReturns struct {
 		result1 error
@@ -52,33 +51,33 @@ type FakeRepository struct {
 	ensureTablesReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetLatestRunStartMomentForStub        func(marta.Direction, marta.Line, string) (time.Time, time.Time, error)
+	GetLatestRunStartMomentForStub        func(martaapi.Direction, martaapi.Line, string) (postgres.EasternTime, postgres.EasternTime, error)
 	getLatestRunStartMomentForMutex       sync.RWMutex
 	getLatestRunStartMomentForArgsForCall []struct {
-		arg1 marta.Direction
-		arg2 marta.Line
+		arg1 martaapi.Direction
+		arg2 martaapi.Line
 		arg3 string
 	}
 	getLatestRunStartMomentForReturns struct {
-		result1 time.Time
-		result2 time.Time
+		result1 postgres.EasternTime
+		result2 postgres.EasternTime
 		result3 error
 	}
 	getLatestRunStartMomentForReturnsOnCall map[int]struct {
-		result1 time.Time
-		result2 time.Time
+		result1 postgres.EasternTime
+		result2 postgres.EasternTime
 		result3 error
 	}
-	SetArrivalTimeStub        func(marta.Direction, marta.Line, string, time.Time, marta.Station, time.Time, time.Time) error
+	SetArrivalTimeStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station, postgres.EasternTime, postgres.EasternTime) error
 	setArrivalTimeMutex       sync.RWMutex
 	setArrivalTimeArgsForCall []struct {
-		arg1 marta.Direction
-		arg2 marta.Line
+		arg1 martaapi.Direction
+		arg2 martaapi.Line
 		arg3 string
-		arg4 time.Time
-		arg5 marta.Station
-		arg6 time.Time
-		arg7 time.Time
+		arg4 postgres.EasternTime
+		arg5 martaapi.Station
+		arg6 postgres.EasternTime
+		arg7 postgres.EasternTime
 	}
 	setArrivalTimeReturns struct {
 		result1 error
@@ -90,17 +89,17 @@ type FakeRepository struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeRepository) AddArrivalEstimate(arg1 marta.Direction, arg2 marta.Line, arg3 string, arg4 time.Time, arg5 marta.Station, arg6 time.Time, arg7 time.Time) error {
+func (fake *FakeRepository) AddArrivalEstimate(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string, arg4 postgres.EasternTime, arg5 martaapi.Station, arg6 postgres.EasternTime, arg7 postgres.EasternTime) error {
 	fake.addArrivalEstimateMutex.Lock()
 	ret, specificReturn := fake.addArrivalEstimateReturnsOnCall[len(fake.addArrivalEstimateArgsForCall)]
 	fake.addArrivalEstimateArgsForCall = append(fake.addArrivalEstimateArgsForCall, struct {
-		arg1 marta.Direction
-		arg2 marta.Line
+		arg1 martaapi.Direction
+		arg2 martaapi.Line
 		arg3 string
-		arg4 time.Time
-		arg5 marta.Station
-		arg6 time.Time
-		arg7 time.Time
+		arg4 postgres.EasternTime
+		arg5 martaapi.Station
+		arg6 postgres.EasternTime
+		arg7 postgres.EasternTime
 	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
 	fake.recordInvocation("AddArrivalEstimate", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
 	fake.addArrivalEstimateMutex.Unlock()
@@ -120,13 +119,13 @@ func (fake *FakeRepository) AddArrivalEstimateCallCount() int {
 	return len(fake.addArrivalEstimateArgsForCall)
 }
 
-func (fake *FakeRepository) AddArrivalEstimateCalls(stub func(marta.Direction, marta.Line, string, time.Time, marta.Station, time.Time, time.Time) error) {
+func (fake *FakeRepository) AddArrivalEstimateCalls(stub func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station, postgres.EasternTime, postgres.EasternTime) error) {
 	fake.addArrivalEstimateMutex.Lock()
 	defer fake.addArrivalEstimateMutex.Unlock()
 	fake.AddArrivalEstimateStub = stub
 }
 
-func (fake *FakeRepository) AddArrivalEstimateArgsForCall(i int) (marta.Direction, marta.Line, string, time.Time, marta.Station, time.Time, time.Time) {
+func (fake *FakeRepository) AddArrivalEstimateArgsForCall(i int) (martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station, postgres.EasternTime, postgres.EasternTime) {
 	fake.addArrivalEstimateMutex.RLock()
 	defer fake.addArrivalEstimateMutex.RUnlock()
 	argsForCall := fake.addArrivalEstimateArgsForCall[i]
@@ -156,15 +155,15 @@ func (fake *FakeRepository) AddArrivalEstimateReturnsOnCall(i int, result1 error
 	}{result1}
 }
 
-func (fake *FakeRepository) EnsureArrivalRecord(arg1 marta.Direction, arg2 marta.Line, arg3 string, arg4 time.Time, arg5 marta.Station) error {
+func (fake *FakeRepository) EnsureArrivalRecord(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string, arg4 postgres.EasternTime, arg5 martaapi.Station) error {
 	fake.ensureArrivalRecordMutex.Lock()
 	ret, specificReturn := fake.ensureArrivalRecordReturnsOnCall[len(fake.ensureArrivalRecordArgsForCall)]
 	fake.ensureArrivalRecordArgsForCall = append(fake.ensureArrivalRecordArgsForCall, struct {
-		arg1 marta.Direction
-		arg2 marta.Line
+		arg1 martaapi.Direction
+		arg2 martaapi.Line
 		arg3 string
-		arg4 time.Time
-		arg5 marta.Station
+		arg4 postgres.EasternTime
+		arg5 martaapi.Station
 	}{arg1, arg2, arg3, arg4, arg5})
 	fake.recordInvocation("EnsureArrivalRecord", []interface{}{arg1, arg2, arg3, arg4, arg5})
 	fake.ensureArrivalRecordMutex.Unlock()
@@ -184,13 +183,13 @@ func (fake *FakeRepository) EnsureArrivalRecordCallCount() int {
 	return len(fake.ensureArrivalRecordArgsForCall)
 }
 
-func (fake *FakeRepository) EnsureArrivalRecordCalls(stub func(marta.Direction, marta.Line, string, time.Time, marta.Station) error) {
+func (fake *FakeRepository) EnsureArrivalRecordCalls(stub func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station) error) {
 	fake.ensureArrivalRecordMutex.Lock()
 	defer fake.ensureArrivalRecordMutex.Unlock()
 	fake.EnsureArrivalRecordStub = stub
 }
 
-func (fake *FakeRepository) EnsureArrivalRecordArgsForCall(i int) (marta.Direction, marta.Line, string, time.Time, marta.Station) {
+func (fake *FakeRepository) EnsureArrivalRecordArgsForCall(i int) (martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station) {
 	fake.ensureArrivalRecordMutex.RLock()
 	defer fake.ensureArrivalRecordMutex.RUnlock()
 	argsForCall := fake.ensureArrivalRecordArgsForCall[i]
@@ -272,12 +271,12 @@ func (fake *FakeRepository) EnsureTablesReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeRepository) GetLatestRunStartMomentFor(arg1 marta.Direction, arg2 marta.Line, arg3 string) (time.Time, time.Time, error) {
+func (fake *FakeRepository) GetLatestRunStartMomentFor(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string) (postgres.EasternTime, postgres.EasternTime, error) {
 	fake.getLatestRunStartMomentForMutex.Lock()
 	ret, specificReturn := fake.getLatestRunStartMomentForReturnsOnCall[len(fake.getLatestRunStartMomentForArgsForCall)]
 	fake.getLatestRunStartMomentForArgsForCall = append(fake.getLatestRunStartMomentForArgsForCall, struct {
-		arg1 marta.Direction
-		arg2 marta.Line
+		arg1 martaapi.Direction
+		arg2 martaapi.Line
 		arg3 string
 	}{arg1, arg2, arg3})
 	fake.recordInvocation("GetLatestRunStartMomentFor", []interface{}{arg1, arg2, arg3})
@@ -298,59 +297,59 @@ func (fake *FakeRepository) GetLatestRunStartMomentForCallCount() int {
 	return len(fake.getLatestRunStartMomentForArgsForCall)
 }
 
-func (fake *FakeRepository) GetLatestRunStartMomentForCalls(stub func(marta.Direction, marta.Line, string) (time.Time, time.Time, error)) {
+func (fake *FakeRepository) GetLatestRunStartMomentForCalls(stub func(martaapi.Direction, martaapi.Line, string) (postgres.EasternTime, postgres.EasternTime, error)) {
 	fake.getLatestRunStartMomentForMutex.Lock()
 	defer fake.getLatestRunStartMomentForMutex.Unlock()
 	fake.GetLatestRunStartMomentForStub = stub
 }
 
-func (fake *FakeRepository) GetLatestRunStartMomentForArgsForCall(i int) (marta.Direction, marta.Line, string) {
+func (fake *FakeRepository) GetLatestRunStartMomentForArgsForCall(i int) (martaapi.Direction, martaapi.Line, string) {
 	fake.getLatestRunStartMomentForMutex.RLock()
 	defer fake.getLatestRunStartMomentForMutex.RUnlock()
 	argsForCall := fake.getLatestRunStartMomentForArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
-func (fake *FakeRepository) GetLatestRunStartMomentForReturns(result1 time.Time, result2 time.Time, result3 error) {
+func (fake *FakeRepository) GetLatestRunStartMomentForReturns(result1 postgres.EasternTime, result2 postgres.EasternTime, result3 error) {
 	fake.getLatestRunStartMomentForMutex.Lock()
 	defer fake.getLatestRunStartMomentForMutex.Unlock()
 	fake.GetLatestRunStartMomentForStub = nil
 	fake.getLatestRunStartMomentForReturns = struct {
-		result1 time.Time
-		result2 time.Time
+		result1 postgres.EasternTime
+		result2 postgres.EasternTime
 		result3 error
 	}{result1, result2, result3}
 }
 
-func (fake *FakeRepository) GetLatestRunStartMomentForReturnsOnCall(i int, result1 time.Time, result2 time.Time, result3 error) {
+func (fake *FakeRepository) GetLatestRunStartMomentForReturnsOnCall(i int, result1 postgres.EasternTime, result2 postgres.EasternTime, result3 error) {
 	fake.getLatestRunStartMomentForMutex.Lock()
 	defer fake.getLatestRunStartMomentForMutex.Unlock()
 	fake.GetLatestRunStartMomentForStub = nil
 	if fake.getLatestRunStartMomentForReturnsOnCall == nil {
 		fake.getLatestRunStartMomentForReturnsOnCall = make(map[int]struct {
-			result1 time.Time
-			result2 time.Time
+			result1 postgres.EasternTime
+			result2 postgres.EasternTime
 			result3 error
 		})
 	}
 	fake.getLatestRunStartMomentForReturnsOnCall[i] = struct {
-		result1 time.Time
-		result2 time.Time
+		result1 postgres.EasternTime
+		result2 postgres.EasternTime
 		result3 error
 	}{result1, result2, result3}
 }
 
-func (fake *FakeRepository) SetArrivalTime(arg1 marta.Direction, arg2 marta.Line, arg3 string, arg4 time.Time, arg5 marta.Station, arg6 time.Time, arg7 time.Time) error {
+func (fake *FakeRepository) SetArrivalTime(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string, arg4 postgres.EasternTime, arg5 martaapi.Station, arg6 postgres.EasternTime, arg7 postgres.EasternTime) error {
 	fake.setArrivalTimeMutex.Lock()
 	ret, specificReturn := fake.setArrivalTimeReturnsOnCall[len(fake.setArrivalTimeArgsForCall)]
 	fake.setArrivalTimeArgsForCall = append(fake.setArrivalTimeArgsForCall, struct {
-		arg1 marta.Direction
-		arg2 marta.Line
+		arg1 martaapi.Direction
+		arg2 martaapi.Line
 		arg3 string
-		arg4 time.Time
-		arg5 marta.Station
-		arg6 time.Time
-		arg7 time.Time
+		arg4 postgres.EasternTime
+		arg5 martaapi.Station
+		arg6 postgres.EasternTime
+		arg7 postgres.EasternTime
 	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
 	fake.recordInvocation("SetArrivalTime", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
 	fake.setArrivalTimeMutex.Unlock()
@@ -370,13 +369,13 @@ func (fake *FakeRepository) SetArrivalTimeCallCount() int {
 	return len(fake.setArrivalTimeArgsForCall)
 }
 
-func (fake *FakeRepository) SetArrivalTimeCalls(stub func(marta.Direction, marta.Line, string, time.Time, marta.Station, time.Time, time.Time) error) {
+func (fake *FakeRepository) SetArrivalTimeCalls(stub func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station, postgres.EasternTime, postgres.EasternTime) error) {
 	fake.setArrivalTimeMutex.Lock()
 	defer fake.setArrivalTimeMutex.Unlock()
 	fake.SetArrivalTimeStub = stub
 }
 
-func (fake *FakeRepository) SetArrivalTimeArgsForCall(i int) (marta.Direction, marta.Line, string, time.Time, marta.Station, time.Time, time.Time) {
+func (fake *FakeRepository) SetArrivalTimeArgsForCall(i int) (martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station, postgres.EasternTime, postgres.EasternTime) {
 	fake.setArrivalTimeMutex.RLock()
 	defer fake.setArrivalTimeMutex.RUnlock()
 	argsForCall := fake.setArrivalTimeArgsForCall[i]

@@ -10,6 +10,15 @@ import (
 	"go.uber.org/zap"
 )
 
+//Direction Direction
+type Direction string
+
+//Line Line
+type Line string
+
+//Station Station
+type Station string
+
 //MartaAPIDatetimeFormat is the datetime format used by the MARTA API
 const MartaAPIDatetimeFormat = "1/2/2006 " + MartaAPITimeFormat
 

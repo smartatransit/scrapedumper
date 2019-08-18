@@ -4,9 +4,8 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/pkg/errors"
-
-	"github.com/bipol/scrapedumper/pkg/marta"
 )
 
 //Repository implements interactions with Postgres through GORM
@@ -14,10 +13,10 @@ import (
 type Repository interface {
 	EnsureTables() error
 
-	GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (runFirstEventMoment time.Time, mostRecentEventTime time.Time, err error)
-	EnsureArrivalRecord(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station) (err error)
-	AddArrivalEstimate(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, eventTime time.Time, estimate time.Time) (err error)
-	SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, eventTime time.Time, arrival time.Time) (err error)
+	GetLatestRunStartMomentFor(dir martaapi.Direction, line martaapi.Line, trainID string) (runFirstEventMoment EasternTime, mostRecentEventTime EasternTime, err error)
+	EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station) (err error)
+	AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error)
+	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
 }
 
 //NewRepository creates a new postgres respotitory
@@ -61,7 +60,7 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 //the most recent one and returns it's earliest start time (used as part of the run identifier) as
 //well as it's most recent one, which is used for determining whether it is stale. If no runs match
 //the metadata, it returns two zero time.Time objects and no error
-func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (runFirstEventMoment time.Time, mostRecentEventTime time.Time, err error) {
+func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir martaapi.Direction, line martaapi.Line, trainID string) (runFirstEventMoment EasternTime, mostRecentEventTime EasternTime, err error) {
 	//TODO to allow for data to come in out of order, grab the latest _among_
 	//those that occurred before the currently considered eventTime
 
@@ -74,8 +73,7 @@ LIMIT 1`,
 		RunGroupIdentifierFor(dir, line, trainID),
 	)
 
-	var s1, s2 string
-	err = row.Scan(&s1, &s2)
+	err = row.Scan(&runFirstEventMoment, &mostRecentEventTime)
 	if err == sql.ErrNoRows {
 		err = nil
 		return
@@ -85,13 +83,11 @@ LIMIT 1`,
 		return
 	}
 
-	runFirstEventMoment, err = time.ParseInLocation(time.RFC3339, s1, EasternTime)
-	mostRecentEventTime, err = time.ParseInLocation(time.RFC3339, s2, EasternTime)
 	return
 }
 
 //EnsureArrivalRecord ensures that a record exists for the specified arrival
-func (a *RepositoryAgent) EnsureArrivalRecord(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station) (err error) {
+func (a *RepositoryAgent) EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station) (err error) {
 	_, err = a.DB.Exec(`
 INSERT INTO "arrivals"
 ("identifier", "run_identifier", "run_group_identifier", "most_recent_event_moment", "direction", "line", "train_id", "run_first_event_moment", "station", "arrival_time", "arrival_estimates")
@@ -100,17 +96,17 @@ ON CONFLICT DO NOTHING`,
 		IdentifierFor(dir, line, trainID, runFirstEventMoment, station),
 		RunIdentifierFor(dir, line, trainID, runFirstEventMoment),
 		RunGroupIdentifierFor(dir, line, trainID),
-		runFirstEventMoment.Format(time.RFC3339), //most_recent_event_moment
+		runFirstEventMoment, //most_recent_event_moment
 		dir,
 		line,
 		trainID,
-		runFirstEventMoment.Format(time.RFC3339),
+		runFirstEventMoment,
 		station,
 		time.Time{}.Format(time.RFC3339), //arrival_time
 		ArrivalEstimates(map[string]string{}),
 	)
 	if err != nil {
-		err = errors.Wrapf(err, "failed to ensure arrival for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339), station)
+		err = errors.Wrapf(err, "failed to ensure arrival for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment, station)
 		return
 	}
 
@@ -119,7 +115,7 @@ ON CONFLICT DO NOTHING`,
 
 //AddArrivalEstimate upserts the specified arrival estimate to the arrival record in question
 //NOTE: this method is NOT thread-safe.
-func (a *RepositoryAgent) AddArrivalEstimate(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, eventTime time.Time, estimate time.Time) (err error) {
+func (a *RepositoryAgent) AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error) {
 	row := a.DB.QueryRow(`
 SELECT arrival_estimates
 FROM "arrivals"
@@ -145,11 +141,11 @@ SET ("arrival_estimates", "most_recent_event_moment")
   = ($1, $2)
 WHERE "arrivals"."identifier" = $3`,
 		arrivalEstimates,
-		eventTime.Format(time.RFC3339),
+		eventTime,
 		IdentifierFor(dir, line, trainID, runFirstEventMoment, station),
 	)
 	if err != nil {
-		err = errors.Wrapf(err, "failed to add arrival estimate for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339), station)
+		err = errors.Wrapf(err, "failed to add arrival estimate for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment, station)
 		return
 	}
 
@@ -157,19 +153,19 @@ WHERE "arrivals"."identifier" = $3`,
 }
 
 //SetArrivalTime upserts the specified actual arrival time to the arrival record in question
-func (a *RepositoryAgent) SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, eventTime time.Time, arrivalTime time.Time) (err error) {
+func (a *RepositoryAgent) SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrivalTime EasternTime) (err error) {
 	_, err = a.DB.Exec(`
 UPDATE "arrivals"
 SET ("arrival_time", "most_recent_event_moment") = ($1, $2)
 WHERE "arrivals"."identifier" = $3
   AND "arrival_time" = $4`,
-		arrivalTime.Format(time.RFC3339),
-		eventTime.Format(time.RFC3339),
+		arrivalTime,
+		eventTime,
 		IdentifierFor(dir, line, trainID, runFirstEventMoment, station),
 		time.Time{}.Format(time.RFC3339), //don't overwrite existing arrival times
 	)
 	if err != nil {
-		err = errors.Wrapf(err, "failed to set arrival time for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339), station)
+		err = errors.Wrapf(err, "failed to set arrival time for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.String(), station)
 		return err
 	}
 

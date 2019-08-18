@@ -7,12 +7,16 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 
-	"github.com/bipol/scrapedumper/pkg/marta"
+	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/postgres"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+func easternDate(year int, month time.Month, day, hour, min, sec, nsec int) postgres.EasternTime {
+	return postgres.EasternTime(time.Date(year, month, day, hour, min, sec, nsec, postgres.EasternTimeZone))
+}
 
 var _ = Describe("Repository", func() {
 	var (
@@ -70,8 +74,8 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 
 	Describe("GetLatestRunStartMomentFor", func() {
 		var (
-			runFirstEventMoment time.Time
-			mostRecentEventTime time.Time
+			runFirstEventMoment postgres.EasternTime
+			mostRecentEventTime postgres.EasternTime
 			callErr             error
 
 			query *sqlmock.ExpectedQuery
@@ -91,8 +95,8 @@ LIMIT 1`).
 		})
 		JustBeforeEach(func() {
 			runFirstEventMoment, mostRecentEventTime, callErr = repo.GetLatestRunStartMomentFor(
-				marta.Direction("N"),
-				marta.Line("GOLD"),
+				martaapi.Direction("N"),
+				martaapi.Line("GOLD"),
 				"193230",
 			)
 		})
@@ -114,13 +118,13 @@ LIMIT 1`).
 		When("all goes well", func() {
 			BeforeEach(func() {
 				rows.AddRow(
-					time.Date(2019, time.August, 5, 18, 15, 16, 0, postgres.EasternTime),
-					time.Date(2019, time.August, 5, 18, 34, 16, 0, postgres.EasternTime),
+					easternDate(2019, time.August, 5, 18, 15, 16, 0),
+					easternDate(2019, time.August, 5, 18, 34, 16, 0),
 				)
 			})
 			It("succeeds", func() {
-				Expect(runFirstEventMoment).To(Equal(time.Date(2019, time.August, 5, 18, 15, 16, 0, postgres.EasternTime)))
-				Expect(mostRecentEventTime).To(Equal(time.Date(2019, time.August, 5, 18, 34, 16, 0, postgres.EasternTime)))
+				Expect(runFirstEventMoment).To(Equal(easternDate(2019, time.August, 5, 18, 15, 16, 0)))
+				Expect(mostRecentEventTime).To(Equal(easternDate(2019, time.August, 5, 18, 34, 16, 0)))
 				Expect(callErr).To(BeNil())
 			})
 		})
@@ -142,24 +146,24 @@ ON CONFLICT DO NOTHING`).
 					"N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS",
 					"N_GOLD_193230_2019-08-05T18:15:16-04:00",
 					"N_GOLD_193230",
-					time.Date(2019, time.August, 5, 18, 15, 16, 0, postgres.EasternTime),
+					easternDate(2019, time.August, 5, 18, 15, 16, 0),
 					"N",
 					"GOLD",
 					"193230",
-					time.Date(2019, time.August, 5, 18, 15, 16, 0, postgres.EasternTime),
+					easternDate(2019, time.August, 5, 18, 15, 16, 0),
 					"FIVE POINTS",
-					time.Time{},
+					postgres.EasternTime(time.Time{}),
 					postgres.ArrivalEstimates(map[string]string{}),
 				)
 			exec.WillReturnResult(sqlmock.NewResult(0, 0))
 		})
 		JustBeforeEach(func() {
 			callErr = repo.EnsureArrivalRecord(
-				marta.Direction("N"),
-				marta.Line("GOLD"),
+				martaapi.Direction("N"),
+				martaapi.Line("GOLD"),
 				"193230",
-				time.Date(2019, time.August, 5, 18, 15, 16, 0, postgres.EasternTime),
-				marta.Station("FIVE POINTS"),
+				easternDate(2019, time.August, 5, 18, 15, 16, 0),
+				martaapi.Station("FIVE POINTS"),
 			)
 		})
 		When("the query fails", func() {
@@ -185,7 +189,7 @@ ON CONFLICT DO NOTHING`).
 			rows  *sqlmock.Rows
 
 			exec      *sqlmock.ExpectedExec
-			eventTime time.Time
+			eventTime postgres.EasternTime
 
 			expectedJSONString string
 		)
@@ -208,24 +212,24 @@ SET \("arrival_estimates", "most_recent_event_moment"\)
 WHERE "arrivals"\."identifier" = \$3`)
 			exec.WillReturnResult(sqlmock.NewResult(0, 0))
 
-			eventTime = time.Date(2019, time.August, 5, 20, 15, 16, 0, postgres.EasternTime)
+			eventTime = easternDate(2019, time.August, 5, 20, 15, 16, 0)
 			expectedJSONString = `{"2019-08-05T19:15:16-04:00":"2019-08-05T22:15:16-04:00","2019-08-05T20:15:16-04:00":"2019-08-05T22:15:16-04:00"}`
 		})
 		JustBeforeEach(func() {
 			exec.WithArgs(
 				expectedJSONString,
-				time.Date(2019, time.August, 5, 20, 15, 16, 0, postgres.EasternTime),
+				easternDate(2019, time.August, 5, 20, 15, 16, 0),
 				"N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS",
 			)
 
 			callErr = repo.AddArrivalEstimate(
-				marta.Direction("N"),
-				marta.Line("GOLD"),
+				martaapi.Direction("N"),
+				martaapi.Line("GOLD"),
 				"193230",
-				time.Date(2019, time.August, 5, 18, 15, 16, 0, postgres.EasternTime),
-				marta.Station("FIVE POINTS"),
+				easternDate(2019, time.August, 5, 18, 15, 16, 0),
+				martaapi.Station("FIVE POINTS"),
 				eventTime,
-				time.Date(2019, time.August, 5, 22, 15, 16, 0, postgres.EasternTime),
+				easternDate(2019, time.August, 5, 22, 15, 16, 0),
 			)
 		})
 		When("the query fails", func() {
@@ -256,7 +260,7 @@ WHERE "arrivals"\."identifier" = \$3`)
 
 			When("the event time already has an estimate recorded", func() {
 				BeforeEach(func() {
-					eventTime = time.Date(2019, time.August, 5, 19, 15, 16, 0, postgres.EasternTime)
+					eventTime = easternDate(2019, time.August, 5, 19, 15, 16, 0)
 				})
 				It("fails", func() {
 					Expect(callErr).To(BeNil())
@@ -279,22 +283,22 @@ SET \("arrival_time", "most_recent_event_moment"\)
 WHERE "arrivals"."identifier" = \$3
   AND "arrival_time" = \$4`).
 				WithArgs(
-					time.Date(2019, time.August, 5, 22, 15, 16, 0, postgres.EasternTime),
-					time.Date(2019, time.August, 5, 20, 15, 16, 0, postgres.EasternTime),
+					easternDate(2019, time.August, 5, 22, 15, 16, 0),
+					easternDate(2019, time.August, 5, 20, 15, 16, 0),
 					"N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS",
-					time.Time{},
+					postgres.EasternTime(time.Time{}),
 				)
 			exec.WillReturnResult(sqlmock.NewResult(0, 0))
 		})
 		JustBeforeEach(func() {
 			callErr = repo.SetArrivalTime(
-				marta.Direction("N"),
-				marta.Line("GOLD"),
+				martaapi.Direction("N"),
+				martaapi.Line("GOLD"),
 				"193230",
-				time.Date(2019, time.August, 5, 18, 15, 16, 0, postgres.EasternTime),
-				marta.Station("FIVE POINTS"),
-				time.Date(2019, time.August, 5, 20, 15, 16, 0, postgres.EasternTime),
-				time.Date(2019, time.August, 5, 22, 15, 16, 0, postgres.EasternTime),
+				easternDate(2019, time.August, 5, 18, 15, 16, 0),
+				martaapi.Station("FIVE POINTS"),
+				easternDate(2019, time.August, 5, 20, 15, 16, 0),
+				easternDate(2019, time.August, 5, 22, 15, 16, 0),
 			)
 		})
 		When("the query fails", func() {

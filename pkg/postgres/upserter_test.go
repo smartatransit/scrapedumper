@@ -44,8 +44,8 @@ var _ = Describe("Upserter", func() {
 			}
 
 			repo.GetLatestRunStartMomentForReturns(
-				time.Date(2019, time.June, 18, 21, 42, 2, 0, postgres.EasternTime),
-				time.Date(2019, time.June, 18, 21, 43, 2, 0, postgres.EasternTime),
+				easternDate(2019, time.June, 18, 21, 42, 2, 0),
+				easternDate(2019, time.June, 18, 21, 43, 2, 0),
 				nil,
 			)
 		})
@@ -62,7 +62,7 @@ var _ = Describe("Upserter", func() {
 		})
 		When("the check for the latest matching run fails", func() {
 			BeforeEach(func() {
-				repo.GetLatestRunStartMomentForReturns(time.Time{}, time.Time{}, errors.New("query failed"))
+				repo.GetLatestRunStartMomentForReturns(postgres.EasternTime(time.Time{}), postgres.EasternTime(time.Time{}), errors.New("query failed"))
 			})
 			It("fails", func() {
 				Expect(callErr).To(MatchError("failed to get latest run start moment for record `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: query failed"))
@@ -75,14 +75,14 @@ var _ = Describe("Upserter", func() {
 			It("fails", func() {
 				Expect(callErr).To(MatchError("failed to ensure pre-existing arrival record for `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: query failed"))
 				_, _, _, runStartMoment, _ := repo.EnsureArrivalRecordArgsForCall(0)
-				Expect(runStartMoment).To(Equal(time.Date(2019, time.June, 18, 21, 42, 2, 0, postgres.EasternTime)))
+				Expect(runStartMoment).To(Equal(easternDate(2019, time.June, 18, 21, 42, 2, 0)))
 			})
 
 			When("the latest run is stale", func() {
 				BeforeEach(func() {
 					repo.GetLatestRunStartMomentForReturns(
-						time.Time{},
-						time.Date(2019, time.June, 18, 21, 43, 2, 0, postgres.EasternTime),
+						postgres.EasternTime(time.Time{}),
+						easternDate(2019, time.June, 18, 21, 43, 2, 0),
 						nil,
 					)
 				})
@@ -90,7 +90,7 @@ var _ = Describe("Upserter", func() {
 					Expect(callErr).To(MatchError("failed to ensure pre-existing arrival record for `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: query failed"))
 
 					_, _, _, runStartMoment, _ := repo.EnsureArrivalRecordArgsForCall(0)
-					Expect(runStartMoment).To(Equal(time.Date(2019, time.June, 18, 21, 41, 2, 0, postgres.EasternTime)))
+					Expect(runStartMoment).To(Equal(easternDate(2019, time.June, 18, 21, 41, 2, 0)))
 				})
 			})
 		})
@@ -129,7 +129,7 @@ var _ = Describe("Upserter", func() {
 					Expect(callErr).To(BeNil())
 
 					_, _, _, _, _, _, estimate := repo.AddArrivalEstimateArgsForCall(0)
-					Expect(estimate).To(Equal(time.Date(2019, time.June, 18, 21, 45, 2, 0, postgres.EasternTime)))
+					Expect(estimate).To(Equal(easternDate(2019, time.June, 18, 21, 45, 2, 0)))
 				})
 			})
 		})
