@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/bipol/scrapedumper/pkg/marta"
@@ -42,12 +41,6 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 		return
 	}
 
-	//TODO temporarily skip other records
-	if rec.TrainID == "104206" && rec.Station == "HAMILTON E HOLMES STATION" {
-	} else {
-		return
-	}
-
 	runFirstEventMoment, mostRecentEventMoment, err := a.repo.GetLatestRunStartMomentFor(marta.Direction(rec.Direction), marta.Line(rec.Line), rec.TrainID)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to get latest run start moment for record `%s`", rec.String())
@@ -59,10 +52,7 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 	if runFirstEventMoment == (time.Time{}) ||
 		mostRecentEventMoment.Before(eventTime.Add(-a.runLifetime)) {
 
-		fmt.Println("new run")
 		runFirstEventMoment = eventTime
-	} else {
-		fmt.Println("using existing run")
 	}
 
 	if err = a.repo.EnsureArrivalRecord(
