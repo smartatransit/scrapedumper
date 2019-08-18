@@ -9,6 +9,12 @@ import (
 	"github.com/bipol/scrapedumper/pkg/marta"
 )
 
+//TODO right now we're using `text` fields for timestamps and
+//_always_ being explicit about time.ParseInLocation when
+//SELECTing and *.Format when passing them in. Try to define
+//a `type EasternTime time.Time` that Scan's from postgresql
+//timestamp without breaking the current behavior :/
+
 func init() {
 	var err error
 	EasternTime, err = time.LoadLocation("US/Eastern")
@@ -23,7 +29,7 @@ var EasternTime *time.Location
 //ArrivalEstimates implements SQL marshalling for an array of ArrivalEstimate's
 type ArrivalEstimates map[string]string
 
-//AddEstimate adds an estiamte
+//AddEstimate adds an estimate. Returns true if the record was new.
 func (aes ArrivalEstimates) AddEstimate(eventTime time.Time, estimate time.Time) bool {
 	evtStr := eventTime.Format(time.RFC3339)
 	estStr := estimate.Format(time.RFC3339)
@@ -34,7 +40,6 @@ func (aes ArrivalEstimates) AddEstimate(eventTime time.Time, estimate time.Time)
 	}
 
 	aes[evtStr] = estStr
-
 	return true
 }
 

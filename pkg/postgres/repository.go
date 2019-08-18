@@ -41,13 +41,13 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 (	"identifier" text,
 	"run_identifier" text,
 	"run_group_identifier" text,
-	"most_recent_event_time" timestamp,
+	"most_recent_event_moment" text,
 	"direction" text,
 	"line" text,
 	"train_id" text,
-	"run_first_event_moment" timestamp,
+	"run_first_event_moment" text,
 	"station" text,
-	"arrival_time" timestamp,
+	"arrival_time" text,
 	"arrival_estimates" text,
 	PRIMARY KEY ("identifier")
 )`)
@@ -62,16 +62,20 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 //well as it's most recent one, which is used for determining whether it is stale. If no runs match
 //the metadata, it returns two zero time.Time objects and no error
 func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir marta.Direction, line marta.Line, trainID string) (runFirstEventMoment time.Time, mostRecentEventTime time.Time, err error) {
+	//TODO to allow for data to come in out of order, grab the latest _among_
+	//those that occurred before the currently considered eventTime
+
 	row := a.DB.QueryRow(`
-SELECT run_first_event_moment, most_recent_event_time
+SELECT run_first_event_moment, most_recent_event_moment
 FROM "arrivals"
 WHERE run_group_identifier = $1
-ORDER BY run_first_event_moment DESC, most_recent_event_time DESC, "arrivals"."identifier" ASC
+ORDER BY run_first_event_moment DESC, most_recent_event_moment DESC, "arrivals"."identifier" ASC
 LIMIT 1`,
 		RunGroupIdentifierFor(dir, line, trainID),
 	)
 
-	err = row.Scan(&runFirstEventMoment, &mostRecentEventTime)
+	var s1, s2 string
+	err = row.Scan(&s1, &s2)
 	if err == sql.ErrNoRows {
 		err = nil
 		return
@@ -80,6 +84,9 @@ LIMIT 1`,
 		err = errors.Wrapf(err, "failed to query latest run start moment for dir `%s` line `%s` and train `%s`", dir, line, trainID)
 		return
 	}
+
+	runFirstEventMoment, err = time.ParseInLocation(time.RFC3339, s1, EasternTime)
+	mostRecentEventTime, err = time.ParseInLocation(time.RFC3339, s2, EasternTime)
 	return
 }
 
@@ -87,25 +94,26 @@ LIMIT 1`,
 func (a *RepositoryAgent) EnsureArrivalRecord(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station) (err error) {
 	_, err = a.DB.Exec(`
 INSERT INTO "arrivals"
-("identifier", "run_identifier", "run_group_identifier", "most_recent_event_time", "direction", "line", "train_id", "run_first_event_moment", "station", "arrival_time", "arrival_estimates")
+("identifier", "run_identifier", "run_group_identifier", "most_recent_event_moment", "direction", "line", "train_id", "run_first_event_moment", "station", "arrival_time", "arrival_estimates")
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 ON CONFLICT DO NOTHING`,
 		IdentifierFor(dir, line, trainID, runFirstEventMoment, station),
 		RunIdentifierFor(dir, line, trainID, runFirstEventMoment),
 		RunGroupIdentifierFor(dir, line, trainID),
-		runFirstEventMoment, //most_recent_event_time
+		runFirstEventMoment.Format(time.RFC3339), //most_recent_event_moment
 		dir,
 		line,
 		trainID,
-		runFirstEventMoment,
+		runFirstEventMoment.Format(time.RFC3339),
 		station,
-		time.Time{}, //arrival_time
+		time.Time{}.Format(time.RFC3339), //arrival_time
 		ArrivalEstimates(map[string]string{}),
 	)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to ensure arrival for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339), station)
 		return
 	}
+
 	return
 }
 
@@ -126,17 +134,18 @@ LIMIT 1`,
 		err = errors.Wrapf(err, "failed to get arrival for `%s` line `%s` and train `%s`", dir, line, trainID)
 		return
 	}
+
 	if ok := arrivalEstimates.AddEstimate(eventTime, estimate); !ok {
 		return
 	}
 
 	_, err = a.DB.Exec(`
 UPDATE "arrivals"
-SET ("arrival_estimates", "most_recent_event_time")
+SET ("arrival_estimates", "most_recent_event_moment")
   = ($1, $2)
 WHERE "arrivals"."identifier" = $3`,
 		arrivalEstimates,
-		eventTime,
+		eventTime.Format(time.RFC3339),
 		IdentifierFor(dir, line, trainID, runFirstEventMoment, station),
 	)
 	if err != nil {
@@ -151,13 +160,13 @@ WHERE "arrivals"."identifier" = $3`,
 func (a *RepositoryAgent) SetArrivalTime(dir marta.Direction, line marta.Line, trainID string, runFirstEventMoment time.Time, station marta.Station, eventTime time.Time, arrivalTime time.Time) (err error) {
 	_, err = a.DB.Exec(`
 UPDATE "arrivals"
-SET ("arrival_time", "most_recent_event_time") = ($1, $2)
+SET ("arrival_time", "most_recent_event_moment") = ($1, $2)
 WHERE "arrivals"."identifier" = $3
   AND "arrival_time" = $4`,
-		arrivalTime,
-		eventTime,
+		arrivalTime.Format(time.RFC3339),
+		eventTime.Format(time.RFC3339),
 		IdentifierFor(dir, line, trainID, runFirstEventMoment, station),
-		time.Time{}, //don't overwrite existing arrival times
+		time.Time{}.Format(time.RFC3339), //don't overwrite existing arrival times
 	)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to set arrival time for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.Format(time.RFC3339), station)

@@ -1,5 +1,7 @@
 package marta
 
+//TODO move this into martaapi?
+
 //Direction Direction
 type Direction string
 
