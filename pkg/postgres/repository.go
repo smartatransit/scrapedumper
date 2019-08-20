@@ -50,10 +50,20 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 	"arrival_estimates" text,
 	PRIMARY KEY ("identifier")
 )`)
+	if err != nil {
+		return errors.Wrapf(err, "failed to ensure arrivals table")
+	}
 
-	//TODO create indexes?
+	_, err = a.DB.Exec(`
+CREATE INDEX ON arrivals
+USING btree
+(	run_group_identifier,
+	run_first_event_moment DESC,
+	most_recent_event_moment DESC,
+	identifier
+)`)
 
-	return errors.Wrap(err, "failed to ensure arrivals table")
+	return errors.Wrap(err, "failed to ensure arrivals index")
 }
 
 //GetLatestRunStartMomentFor from among all runs matching the specified data, this function selects
@@ -65,7 +75,7 @@ func (a *RepositoryAgent) GetLatestRunStartMomentFor(dir martaapi.Direction, lin
 SELECT run_first_event_moment, most_recent_event_moment
 FROM "arrivals"
 WHERE run_group_identifier = $1 AND most_recent_event_moment < $2
-ORDER BY run_first_event_moment DESC, most_recent_event_moment DESC, "arrivals"."identifier" ASC
+ORDER BY run_first_event_moment DESC, most_recent_event_moment DESC, identifier ASC
 LIMIT 1`,
 		RunGroupIdentifierFor(dir, line, trainID),
 		asOfMoment,

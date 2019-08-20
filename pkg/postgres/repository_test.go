@@ -37,13 +37,10 @@ var _ = Describe("Repository", func() {
 	})
 
 	Describe("EnsureTables", func() {
-		var (
-			callErr error
+		var callErr error
 
-			exec *sqlmock.ExpectedExec
-		)
-		BeforeEach(func() {
-			exec = smock.ExpectExec(`
+		var expectTableExec = func() *sqlmock.ExpectedExec {
+			return smock.ExpectExec(`
 CREATE TABLE IF NOT EXISTS "arrivals"
 \(	"identifier" text,
 	"run_identifier" text,
@@ -58,16 +55,36 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 	"arrival_estimates" text,
 	PRIMARY KEY \("identifier"\)
 \)`)
-		})
+		}
+
+		var expectIndexExec = func() *sqlmock.ExpectedExec {
+			return smock.ExpectExec(`
+CREATE INDEX ON arrivals
+USING btree
+\(	run_group_identifier,
+	run_first_event_moment DESC,
+	most_recent_event_moment DESC,
+	identifier
+\)`)
+		}
 		JustBeforeEach(func() {
 			callErr = repo.EnsureTables()
 		})
-		When("the query fails", func() {
+		When("the table query fails", func() {
 			BeforeEach(func() {
-				exec.WillReturnError(errors.New("query failed"))
+				expectTableExec().WillReturnError(errors.New("query failed"))
 			})
 			It("fails", func() {
 				Expect(callErr).To(MatchError("failed to ensure arrivals table: query failed"))
+			})
+		})
+		When("the index query fails", func() {
+			BeforeEach(func() {
+				expectTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectIndexExec().WillReturnError(errors.New("query failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to ensure arrivals index: query failed"))
 			})
 		})
 	})
@@ -86,7 +103,7 @@ CREATE TABLE IF NOT EXISTS "arrivals"
 SELECT run_first_event_moment, most_recent_event_moment
 FROM "arrivals"
 WHERE run_group_identifier = \$1 AND most_recent_event_moment < \$2
-ORDER BY run_first_event_moment DESC, most_recent_event_moment DESC, "arrivals"."identifier" ASC
+ORDER BY run_first_event_moment DESC, most_recent_event_moment DESC, identifier ASC
 LIMIT 1`).
 				WithArgs("N_GOLD_193230", "2019-08-05T18:15:16-04:00")
 
@@ -124,9 +141,9 @@ LIMIT 1`).
 				)
 			})
 			It("succeeds", func() {
+				Expect(callErr).To(BeNil())
 				Expect(runFirstEventMoment).To(Equal(easternDate(2019, time.August, 5, 18, 15, 16, 0)))
 				Expect(mostRecentEventTime).To(Equal(easternDate(2019, time.August, 5, 18, 34, 16, 0)))
-				Expect(callErr).To(BeNil())
 			})
 		})
 	})
