@@ -126,6 +126,17 @@ LIMIT 1`).
 				Expect(callErr).To(MatchError("failed to query latest run start moment for dir `N` line `GOLD` and train `193230`: query failed"))
 			})
 		})
+		//this provides test coverage to the EasternTime#Scan method
+		When("the query returns an int for the timestamps", func() {
+			BeforeEach(func() {
+				rows := sqlmock.NewRows([]string{"run_first_event_moment", "most_recent_event_moment"})
+				rows.AddRow(5, 5)
+				query.WillReturnRows(rows)
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to query latest run start moment for dir `N` line `GOLD` and train `193230`: sql: Scan error on column index 0, name \"run_first_event_moment\": expected string, got int64"))
+			})
+		})
 		When("no record is found", func() {
 			It("returns zero times", func() {
 				Expect(runFirstEventMoment).To(BeZero())
@@ -256,6 +267,17 @@ WHERE "arrivals"\."identifier" = \$3`)
 			})
 			It("fails", func() {
 				Expect(callErr).To(MatchError("failed to get arrival for `N` line `GOLD` and train `193230`: query failed"))
+			})
+		})
+		//this provides test coverage to the ArrivalEstimates#Scan method
+		When("the query returns an int for `arrival_estimates`", func() {
+			BeforeEach(func() {
+				rows := sqlmock.NewRows([]string{"arrival_estimates"})
+				rows.AddRow(5)
+				query.WillReturnRows(rows)
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to get arrival for `N` line `GOLD` and train `193230`: sql: Scan error on column index 0, name \"arrival_estimates\": expected string, got int64"))
 			})
 		})
 		When("the update fails", func() {
