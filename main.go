@@ -111,36 +111,59 @@ func GetWorkConfig(opts options) (wc config.WorkConfig, err error) {
 
 //BuildDefaultWorkConfig produces the default collection of dumpers
 func BuildDefaultWorkConfig(opts options) config.WorkConfig {
-	return config.WorkConfig{
-		TrainDumper: config.DumpConfig{
-			Kind: config.RoundRobinKind,
-			Components: []config.DumpConfig{
-				config.DumpConfig{
-					Kind:         config.S3DumperKind,
-					S3BucketName: opts.S3BucketName,
-				},
-				config.DumpConfig{
-					Kind:                config.FileDumperKind,
-					LocalOutputLocation: opts.OutputLocation,
-				},
-				config.DumpConfig{
-					Kind:            config.DynamoDBDumperKind,
-					DynamoTableName: opts.DynamoTableName,
-				},
+	var (
+		dumpConfig []config.DumpConfig
+		busConfig  []config.DumpConfig
+		cfg        config.WorkConfig
+	)
+	if opts.S3BucketName != "" {
+		dumpConfig = append(dumpConfig,
+			config.DumpConfig{
+				Kind:         config.S3DumperKind,
+				S3BucketName: opts.S3BucketName,
 			},
-		},
-		BusDumper: config.DumpConfig{
-			Kind: config.RoundRobinKind,
-			Components: []config.DumpConfig{
-				config.DumpConfig{
-					Kind:         config.S3DumperKind,
-					S3BucketName: opts.S3BucketName,
-				},
-				config.DumpConfig{
-					Kind:                config.FileDumperKind,
-					LocalOutputLocation: opts.OutputLocation,
-				},
+		)
+		busConfig = append(busConfig,
+			config.DumpConfig{
+				Kind:         config.S3DumperKind,
+				S3BucketName: opts.S3BucketName,
 			},
-		},
+		)
 	}
+	if opts.OutputLocation != "" {
+		dumpConfig = append(dumpConfig,
+			config.DumpConfig{
+				Kind:                config.FileDumperKind,
+				LocalOutputLocation: opts.OutputLocation,
+			},
+		)
+		busConfig = append(busConfig,
+			config.DumpConfig{
+				Kind:         config.S3DumperKind,
+				S3BucketName: opts.S3BucketName,
+			},
+		)
+	}
+	if opts.DynamoTableName != "" {
+		dumpConfig = append(dumpConfig,
+			config.DumpConfig{
+				Kind:            config.DynamoDBDumperKind,
+				DynamoTableName: opts.DynamoTableName,
+			},
+		)
+	}
+	if len(dumpConfig) != 0 {
+		cfg.TrainDumper = &config.DumpConfig{
+			Kind:       config.RoundRobinKind,
+			Components: dumpConfig,
+		}
+	}
+	if len(busConfig) != 0 {
+		cfg.BusDumper = &config.DumpConfig{
+			Kind:       config.RoundRobinKind,
+			Components: busConfig,
+		}
+
+	}
+	return cfg
 }

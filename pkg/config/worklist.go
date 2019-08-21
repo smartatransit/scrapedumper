@@ -10,8 +10,8 @@ import (
 //WorkConfig is the top-level config object, defined an entire
 //scrapedumper job to be started.
 type WorkConfig struct {
-	BusDumper   DumpConfig `json:"bus_dumper"`
-	TrainDumper DumpConfig `json:"train_dumper"`
+	BusDumper   *DumpConfig `json:"bus_dumper"`
+	TrainDumper *DumpConfig `json:"train_dumper"`
 }
 
 //BuildWorkList builds a worklist from the specified clients
@@ -23,21 +23,22 @@ func BuildWorkList(
 	busClient martaapi.Client,
 	trainClient martaapi.Client,
 ) (workList worker.WorkList, err error) {
-	busDumper, err := BuildDumper(log, sqlOpen, c.BusDumper)
-	if err != nil {
-		err = errors.Wrap(err, "failed to build bus dumper")
-		return
+	if c.BusDumper != nil {
+		busDumper, err := BuildDumper(log, sqlOpen, *c.BusDumper)
+		if err != nil {
+			err = errors.Wrap(err, "failed to build bus dumper")
+			return workList, err
+		}
+		workList.AddWork(busClient, busDumper)
 	}
 
-	trainDumper, err := BuildDumper(log, sqlOpen, c.TrainDumper)
-	if err != nil {
-		err = errors.Wrap(err, "failed to build train dumper")
-		return
+	if c.TrainDumper != nil {
+		trainDumper, err := BuildDumper(log, sqlOpen, *c.TrainDumper)
+		if err != nil {
+			err = errors.Wrap(err, "failed to build train dumper")
+			return workList, err
+		}
+		workList.AddWork(trainClient, trainDumper)
 	}
-
-	workList.
-		AddWork(trainClient, trainDumper).
-		AddWork(busClient, busDumper)
-
 	return
 }
