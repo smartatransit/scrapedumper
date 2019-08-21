@@ -18,17 +18,18 @@ type WorkConfig struct {
 //and dumper config
 func BuildWorkList(
 	log *zap.Logger,
+	sqlOpen SQLOpener,
 	c WorkConfig,
 	busClient martaapi.Client,
 	trainClient martaapi.Client,
 ) (workList worker.WorkList, err error) {
-	busDumper, err := BuildDumper(log, c.BusDumper)
+	busDumper, err := BuildDumper(log, sqlOpen, c.BusDumper)
 	if err != nil {
 		err = errors.Wrap(err, "failed to build bus dumper")
 		return
 	}
 
-	trainDumper, err := BuildDumper(log, c.TrainDumper)
+	trainDumper, err := BuildDumper(log, sqlOpen, c.TrainDumper)
 	if err != nil {
 		err = errors.Wrap(err, "failed to build train dumper")
 		return

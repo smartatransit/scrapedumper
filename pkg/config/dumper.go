@@ -1,13 +1,13 @@
 package config
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
@@ -15,9 +15,6 @@ import (
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/postgres"
-
-	//GORM postgres dialect
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 //DumperKind is an enum type used to specify which type of dumper is being configured
@@ -50,8 +47,17 @@ type DumpConfig struct {
 //ErrDumperValidationFailed indicates that a dumper's configuration was invalid
 var ErrDumperValidationFailed = errors.New("dumper failed to build due to missing args")
 
-//BuildDumper builds the dumper described by the given config option
-func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
+//SQLOpener mocks out the database/sql.Open functino for testing
+//go:generate counterfeiter . SQLOpener
+type SQLOpener func(string, string) (*sql.DB, error)
+
+//BuildDumper builds the dumper described by the given config option.
+//If no SQL-based dumpers are to be used, then `sqlOpen` is not required.
+func BuildDumper(
+	log *zap.Logger,
+	sqlOpen SQLOpener,
+	c DumpConfig,
+) (dumper.Dumper, error) {
 	switch c.Kind {
 	case RoundRobinKind:
 		componentDumpers := make([]dumper.Dumper, len(c.Components))
@@ -61,7 +67,7 @@ func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
 
 		for i := range c.Components {
 			var err error
-			componentDumpers[i], err = BuildDumper(log, c.Components[i])
+			componentDumpers[i], err = BuildDumper(log, sqlOpen, c.Components[i])
 			if err != nil {
 				return nil, err
 			}
@@ -92,12 +98,12 @@ func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
 		return dumper.NewS3DumpHandler(s3Manager, c.S3BucketName, log), nil
 	case PostgresDumperKind:
 		if c.PostgresConnectionString == "" {
-			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no postgres table name provided: provide a postgres table name using the config file, a command-line argument, or an environment variable", PostgresDumperKind)
+			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no postgres connection string provided: provide a postgres connection string using the config file, a command-line argument, or an environment variable", PostgresDumperKind)
 		}
 
-		db, err := gorm.Open("postgres", c.PostgresConnectionString)
+		db, err := sqlOpen("postgres", c.PostgresConnectionString)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to connect to postgres")
+			return nil, errors.Wrapf(err, "failed connecting to postgres database")
 		}
 		defer db.Close()
 
