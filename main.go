@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -55,6 +56,7 @@ func main() {
 
 	workList, err := config.BuildWorkList(
 		logger,
+		sql.Open,
 		wc,
 		busClient,
 		trainClient,
