@@ -3,11 +3,11 @@ package worker
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/bipol/scrapedumper/pkg/circuitbreaker"
 	"github.com/bipol/scrapedumper/pkg/dumper"
-	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -28,12 +28,18 @@ func NewWorkList() *WorkList {
 	return &WorkList{}
 }
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Scraper
+type Scraper interface {
+	Scrape(ctx context.Context) (io.ReadCloser, error)
+	Prefix() string
+}
+
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . WorkGetter
 type WorkGetter interface {
 	GetWork() []ScrapeDump
 }
 
-func (w *WorkList) AddWork(sched martaapi.ScheduleFinder, dump dumper.Dumper) *WorkList {
+func (w *WorkList) AddWork(sched Scraper, dump dumper.Dumper) *WorkList {
 	w.work = append(w.work, ScrapeDump{sched, dump})
 	return w
 }
@@ -50,7 +56,7 @@ type WorkList struct {
 
 // ScrapeDump is a pairing of a client (scraper) and a dumper.
 type ScrapeDump struct {
-	Scraper martaapi.ScheduleFinder
+	Scraper Scraper
 	Dumper  dumper.Dumper
 }
 
@@ -110,7 +116,7 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 	c.logger.Debug("scrape and dumping")
 	for _, sd := range c.workList.GetWork() {
-		reader, err := sd.Scraper.FindSchedules(ctx)
+		reader, err := sd.Scraper.Scrape(ctx)
 		if err != nil {
 			return err
 		}
