@@ -2,6 +2,8 @@ package martaapi_test
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"io/ioutil"
 	"net/http"
 
@@ -48,8 +50,28 @@ var _ = Describe("Client", func() {
 	Context("New", func() {
 		When("called", func() {
 			It("does not return an err", func() {
-				Expect(err).To(BeNil())
 				Expect(client).ToNot(BeNil())
+			})
+		})
+	})
+	Context("FindSchedules", func() {
+		JustBeforeEach(func() {
+			_, err = client.FindSchedules(context.Background())
+		})
+		When("the doer fails", func() {
+			BeforeEach(func() {
+				doer.DoReturns(nil, errors.New("do failed"))
+			})
+			It("fails", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
+		When("the request receives a non-normal error code", func() {
+			BeforeEach(func() {
+				doer.DoReturns(&http.Response{StatusCode: http.StatusBadGateway}, nil)
+			})
+			It("fails", func() {
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
