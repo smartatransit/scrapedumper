@@ -22,7 +22,7 @@ before_script:
   - go install github.com/onsi/gomega/...     # fetches the matcher library
 
 script:
-  - golangci-lint run       # run a bunch of code checkers/linters in parallel
+  - golangci-lint run --config=.golangci-lint.yaml # run a bunch of code checkers/linters in parallel
   - ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress
   - GOOS=linux go build # target the container environment
 

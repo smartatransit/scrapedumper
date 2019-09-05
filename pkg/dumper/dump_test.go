@@ -116,7 +116,7 @@ var _ = Describe("Dump", func() {
 			BeforeEach(func() {
 				var w *io.PipeWriter
 				r, w = io.Pipe()
-				w.CloseWithError(errors.New("broken pipe")) //nolint:errcheck
+				w.CloseWithError(errors.New("broken pipe"))
 			})
 			It("returns an error", func() {
 				Expect(err).To(HaveOccurred())
