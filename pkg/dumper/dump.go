@@ -87,7 +87,9 @@ func (c LocalDumpHandler) Dump(ctx context.Context, r io.Reader, path string) er
 	if err != nil {
 		//avoid leaving a ,malformed JSON file behind if possible
 		if f.Close() == nil {
-			c.fs.Remove(f.Name())
+			if rErr := c.fs.Remove(f.Name()); rErr != nil {
+				err = rErr
+			}
 		}
 
 		return err
