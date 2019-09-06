@@ -33,6 +33,8 @@ script:
   - docker tag $REPO:${TRAVIS_COMMIT::8} $REPO:$TAG
   - docker tag $REPO:${TRAVIS_COMMIT::8} $REPO:travis-$TRAVIS_BUILD_NUMBER
   - docker push $REPO:$TAG
+  - docker push $REPO:travis-$TRAVIS_BUILD_NUMBER
+  - docker push $REPO:commit-${TRAVIS_COMMIT::8}
 
 after_success:
   - touch coverage.txt; find . -name "*.coverprofile" | xargs -l cat >> coverage.txt
