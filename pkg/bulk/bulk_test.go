@@ -41,11 +41,13 @@ var _ = Describe("DirectoryDumperAgent", func() {
 		var (
 			dirFile *bulkfakes.FakeFile
 
+			startAt string
 			callErr error
 		)
 		BeforeEach(func() {
 			dirFile = &bulkfakes.FakeFile{}
 
+			startAt = ""
 			dirFile.ReaddirReturns([]os.FileInfo{
 				fInfo("1", false),
 				fInfo("4", false),
@@ -60,7 +62,7 @@ var _ = Describe("DirectoryDumperAgent", func() {
 		})
 
 		JustBeforeEach(func() {
-			callErr = agent.DumpDirectory(context.Background(), "/path/to/dir")
+			callErr = agent.DumpDirectory(context.Background(), "/path/to/dir", startAt)
 		})
 
 		When("the directory can't be opened", func() {
@@ -104,6 +106,20 @@ var _ = Describe("DirectoryDumperAgent", func() {
 				Expect(fs.OpenArgsForCall(1)).To(Equal("/path/to/dir/1"))
 				Expect(fs.OpenArgsForCall(2)).To(Equal("/path/to/dir/3"))
 				Expect(fs.OpenArgsForCall(3)).To(Equal("/path/to/dir/4"))
+			})
+
+			When("a startAt value is provided", func() {
+				BeforeEach(func() {
+					startAt = "3"
+				})
+				It("succeeds", func() {
+					Expect(callErr).To(BeNil())
+
+					Expect(fs.OpenCallCount()).To(Equal(3))
+					Expect(fs.OpenArgsForCall(0)).To(Equal("/path/to/dir"))
+					Expect(fs.OpenArgsForCall(1)).To(Equal("/path/to/dir/3"))
+					Expect(fs.OpenArgsForCall(2)).To(Equal("/path/to/dir/4"))
+				})
 			})
 		})
 	})

@@ -74,9 +74,9 @@ func (fil fileInfoList) Swap(i, j int) {
 	fil[i] = t
 }
 
-//DumpDirectory loads all files in the specified directory
-func (a DirectoryDumperAgent) DumpDirectory(ctx context.Context, dir string) (err error) {
-
+//DumpDirectory loads all files in the specified directory, excluding files that are alphabetically
+//before `startAt`. If `startAt` is empty, all files will be included.
+func (a DirectoryDumperAgent) DumpDirectory(ctx context.Context, dir string, startAt string) (err error) {
 	f, err := a.fs.Open(dir)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to open directory contents for reading at path `%s`", dir)
@@ -94,7 +94,7 @@ func (a DirectoryDumperAgent) DumpDirectory(ctx context.Context, dir string) (er
 	sort.Sort(fileInfoList(list))
 
 	for _, finfo := range list {
-		if finfo.IsDir() {
+		if finfo.IsDir() || strings.Compare(startAt, finfo.Name()) > 0 {
 			continue
 		}
 

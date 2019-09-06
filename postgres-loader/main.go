@@ -22,6 +22,7 @@ import (
 type options struct {
 	DataLocation             string `long:"data-location" env:"DATA_LOCATION" description:"local path to from which to collect JSON files" required:"true"`
 	PostgresConnectionString string `long:"postgres-connection-string" env:"POSTGRES_CONNECTION_STRING" required:"true"`
+	StartAt                  string `long:"start-at-alphabetically" env:"START_AT_ALPHABETICALLY"`
 }
 
 func main() {
@@ -54,7 +55,11 @@ func main() {
 	upserter := postgres.NewUpserter(repo, time.Hour)
 	dumper := dumper.NewPostgresDumpHandler(logger, upserter)
 	dirDumper := bulk.NewDirectoryDumper(fs, dumper)
-	err = dirDumper.DumpDirectory(context.Background(), opts.DataLocation)
+	err = dirDumper.DumpDirectory(
+		context.Background(),
+		opts.DataLocation,
+		opts.StartAt,
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
