@@ -50,16 +50,20 @@ type options struct {
 	"bus_dumper": {
 		"kind": "ROUND_ROBIN | FILE | S3 | DYNAMODB",
 		"components": [],
-		"s3_bucket_name": "",
-		"dynamo_table_name": "",
-		"local_output_location": ""
+		"options" {
+			"s3_bucket_name": "",
+			"dynamo_table_name": "",
+			"local_output_location": "",
+		}
 	},
 	"train_dumper": {
 		"kind": "ROUND_ROBIN | FILE | S3 | DYNAMODB",
 		"components": [],
-		"s3_bucket_name": "",
-		"dynamo_table_name": "",
-		"local_output_location": ""
+		"options" {
+			"s3_bucket_name": "",
+			"dynamo_table_name": "",
+			"local_output_location": "",
+		}
 	}
 }
 ```

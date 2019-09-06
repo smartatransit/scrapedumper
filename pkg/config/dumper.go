@@ -31,9 +31,8 @@ const (
 type DumpConfig struct {
 	Kind DumperKind `json:"kind"`
 
-	Components []DumpConfig `json:"components"`
-	// TODO: Move these out into just a generic map[string]string?
-	Options map[string]string `json:"options"`
+	Components []DumpConfig      `json:"components"`
+	Options    map[string]string `json:"options"`
 }
 
 //ErrDumperValidationFailed indicates that a dumper's configuration was invalid
