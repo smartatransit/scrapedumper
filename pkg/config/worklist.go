@@ -7,6 +7,10 @@ import (
 	"go.uber.org/zap"
 )
 
+type ScrapeDumperConfig struct {
+	Scrapers []ScrapeConfig `json:"scrapers"`
+}
+
 //WorkConfig is the top-level config object, defined an entire
 //scrapedumper job to be started.
 type WorkConfig struct {

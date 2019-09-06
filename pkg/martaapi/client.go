@@ -93,8 +93,3 @@ func (c Client) FindSchedules(ctx context.Context) (io.ReadCloser, error) {
 	}
 	return resp.Body, nil
 }
-
-// Scrape fulfills scraper interface
-func (c Client) Scrape(ctx context.Context) (io.ReadCloser, error) {
-	return c.FindSchedules(ctx)
-}

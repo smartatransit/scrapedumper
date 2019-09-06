@@ -68,4 +68,28 @@ type options struct {
 }
 ```
 
+new approach:
+```json
+{
+
+  "scrapers": [
+	{
+		"kind": "WEB,
+		"dumper":
+			{
+				"kind": "ROUND_ROBIN | FILE | S3 | DYNAMODB",
+				"components": [],
+				"options" {
+					"s3_bucket_name": "",
+					"dynamo_table_name": "",
+					"local_output_location": "",
+				}
+			},
+		"options" {
+		}
+	},
+  ]
+}
+```
+
 `./scrapedumper --config-path=./config --marta-api-key={{key}} --poll-time-in-seconds=15`
