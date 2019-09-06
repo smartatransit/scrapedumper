@@ -8,6 +8,7 @@ import (
 
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/dumper/dumperfakes"
+	"github.com/bipol/scrapedumper/pkg/postgres/postgresfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -142,6 +143,52 @@ var _ = Describe("Dump", func() {
 			})
 			It("calls batch write item", func() {
 				Expect(dp.BatchWriteItemWithContextCallCount()).To(Equal(1))
+			})
+		})
+	})
+	Context("PostgresDumpHandler", func() {
+		var (
+			logger   *zap.Logger
+			dh       dumper.PostgresDumpHandler
+			upserter *postgresfakes.FakeUpserter
+			err      error
+			r        io.Reader
+		)
+		BeforeEach(func() {
+			logger = zap.NewNop()
+			upserter = &postgresfakes.FakeUpserter{}
+			r = strings.NewReader("[{},{},{}]")
+			err = nil
+		})
+		JustBeforeEach(func() {
+			dh = dumper.NewPostgresDumpHandler(
+				logger,
+				upserter,
+			)
+			err = dh.Dump(context.Background(), r, "somepath")
+		})
+		When("the JSON is invalid", func() {
+			BeforeEach(func() {
+				r = strings.NewReader("{")
+			})
+			It("fails", func() {
+				Expect(err).To(MatchError("unexpected EOF"))
+				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(0))
+			})
+		})
+		When("an upsert fails", func() {
+			BeforeEach(func() {
+				upserter.AddRecordToDatabaseReturnsOnCall(0, errors.New("upsert failed"))
+			})
+			It("logs and moves on", func() {
+				Expect(err).To(BeNil())
+				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(3))
+			})
+		})
+		When("all goes well", func() {
+			It("succeeds", func() {
+				Expect(err).To(BeNil())
+				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(3))
 			})
 		})
 	})

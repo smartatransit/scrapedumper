@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -195,7 +194,7 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 	for _, rec := range records {
 		err := c.upserter.AddRecordToDatabase(rec)
 		if err != nil {
-			return errors.Wrap(err, "failed to upsert MARTA API response to postgres")
+			c.logger.Error(fmt.Sprintf("failed to upsert MARTA API response to postgres: %s", err.Error()))
 		}
 	}
 

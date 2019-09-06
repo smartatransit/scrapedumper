@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
 
+	"github.com/bipol/scrapedumper/pkg/martaapi"
 	. "github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/martaapi/martaapifakes"
 )
@@ -51,6 +52,22 @@ var _ = Describe("Client", func() {
 				Expect(err).To(BeNil())
 				Expect(client).ToNot(BeNil())
 			})
+		})
+	})
+})
+
+var _ = Describe("Schedule", func() {
+	Describe("HarArrived", func() {
+		It("works", func() {
+			Expect(martaapi.Schedule{WaitingTime: "ArrIVIng"}.HasArrived()).To(BeTrue())
+			Expect(martaapi.Schedule{WaitingTime: "arrIVED"}.HasArrived()).To(BeTrue())
+			Expect(martaapi.Schedule{WaitingTime: "boarDING"}.HasArrived()).To(BeTrue())
+			Expect(martaapi.Schedule{WaitingTime: "WHAT"}.HasArrived()).To(BeFalse())
+		})
+	})
+	Describe("String", func() {
+		It("works", func() {
+			Expect(martaapi.Schedule{Direction: "N"}.String()).NotTo(BeEmpty())
 		})
 	})
 })
