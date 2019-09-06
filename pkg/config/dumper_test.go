@@ -22,12 +22,15 @@ var _ = Describe("BuildDumper", func() {
 
 	When("the Kind is RoundRobinKind", func() {
 		BeforeEach(func() {
+			opts := make(map[string]string)
+			opts["s3_bucket_name"] = "bucket-name"
+
 			cfg = config.DumpConfig{
 				Kind: config.RoundRobinKind,
 				Components: []config.DumpConfig{
 					config.DumpConfig{
-						Kind:         config.S3DumperKind,
-						S3BucketName: "my-bucket",
+						Kind:    config.S3DumperKind,
+						Options: opts,
 					},
 				},
 			}
@@ -50,7 +53,7 @@ var _ = Describe("BuildDumper", func() {
 
 		When("one of the dumpers can't be build", func() {
 			BeforeEach(func() {
-				cfg.Components[0].S3BucketName = ""
+				cfg.Components[0].Options = nil
 			})
 			It("fails", func() {
 				Expect(callErr).To(MatchError(ContainSubstring("dumper kind S3 requested but no s3 bucket name provided")))
@@ -60,9 +63,11 @@ var _ = Describe("BuildDumper", func() {
 
 	When("the Kind is FileDumperKind", func() {
 		BeforeEach(func() {
+			opts := make(map[string]string)
+			opts["local_output_location"] = "/my/dir"
 			cfg = config.DumpConfig{
-				Kind:                config.FileDumperKind,
-				LocalOutputLocation: "/my/dir",
+				Kind:    config.FileDumperKind,
+				Options: opts,
 			}
 		})
 
@@ -74,7 +79,7 @@ var _ = Describe("BuildDumper", func() {
 
 		When("the required configs are missing", func() {
 			BeforeEach(func() {
-				cfg.LocalOutputLocation = ""
+				cfg.Options = nil
 			})
 			It("fails", func() {
 				Expect(callErr).To(MatchError(ContainSubstring("dumper kind FILE requested but no file output location provided")))
@@ -83,9 +88,11 @@ var _ = Describe("BuildDumper", func() {
 	})
 	When("the Kind is S3DumperKind", func() {
 		BeforeEach(func() {
+			opts := make(map[string]string)
+			opts["s3_bucket_name"] = "bucket-name"
 			cfg = config.DumpConfig{
-				Kind:         config.S3DumperKind,
-				S3BucketName: "bucket-name",
+				Kind:    config.S3DumperKind,
+				Options: opts,
 			}
 		})
 
@@ -97,7 +104,7 @@ var _ = Describe("BuildDumper", func() {
 
 		When("the required configs are missing", func() {
 			BeforeEach(func() {
-				cfg.S3BucketName = ""
+				cfg.Options = nil
 			})
 			It("fails", func() {
 				Expect(callErr).To(MatchError(ContainSubstring("dumper kind S3 requested but no s3 bucket name provided")))
@@ -106,9 +113,12 @@ var _ = Describe("BuildDumper", func() {
 	})
 	When("the Kind is DynamoDBDumperKind", func() {
 		BeforeEach(func() {
+			opts := make(map[string]string)
+			opts["dynamo_table_name"] = "my-table"
+
 			cfg = config.DumpConfig{
-				Kind:            config.DynamoDBDumperKind,
-				DynamoTableName: "my-table",
+				Kind:    config.DynamoDBDumperKind,
+				Options: opts,
 			}
 		})
 
@@ -120,7 +130,7 @@ var _ = Describe("BuildDumper", func() {
 
 		When("the required configs are missing", func() {
 			BeforeEach(func() {
-				cfg.DynamoTableName = ""
+				cfg.Options = nil
 			})
 			It("fails", func() {
 				Expect(callErr).To(MatchError(ContainSubstring("dumper kind DYNAMODB requested but no dynamo table name provided")))

@@ -116,38 +116,47 @@ func BuildDefaultWorkConfig(opts options) config.WorkConfig {
 		cfg        config.WorkConfig
 	)
 	if opts.S3BucketName != "" {
+		opt := make(map[string]string)
+		opt["s3_bucket_name"] = opts.S3BucketName
+
 		dumpConfig = append(dumpConfig,
 			config.DumpConfig{
-				Kind:         config.S3DumperKind,
-				S3BucketName: opts.S3BucketName,
+				Kind:    config.S3DumperKind,
+				Options: opt,
 			},
 		)
 		busConfig = append(busConfig,
 			config.DumpConfig{
-				Kind:         config.S3DumperKind,
-				S3BucketName: opts.S3BucketName,
+				Kind:    config.S3DumperKind,
+				Options: opt,
 			},
 		)
 	}
 	if opts.OutputLocation != "" {
+		opt := make(map[string]string)
+		opt["local_output_location"] = opts.OutputLocation
+
 		dumpConfig = append(dumpConfig,
 			config.DumpConfig{
-				Kind:                config.FileDumperKind,
-				LocalOutputLocation: opts.OutputLocation,
+				Kind:    config.FileDumperKind,
+				Options: opt,
 			},
 		)
 		busConfig = append(busConfig,
 			config.DumpConfig{
-				Kind:         config.S3DumperKind,
-				S3BucketName: opts.S3BucketName,
+				Kind:    config.S3DumperKind,
+				Options: opt,
 			},
 		)
 	}
 	if opts.DynamoTableName != "" {
+		opt := make(map[string]string)
+		opt["dynamo_table_name"] = opts.DynamoTableName
+
 		dumpConfig = append(dumpConfig,
 			config.DumpConfig{
-				Kind:            config.DynamoDBDumperKind,
-				DynamoTableName: opts.DynamoTableName,
+				Kind:    config.DynamoDBDumperKind,
+				Options: opt,
 			},
 		)
 	}

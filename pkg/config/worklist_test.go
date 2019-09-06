@@ -18,13 +18,16 @@ var _ = Describe("BuildWorkList", func() {
 	)
 
 	BeforeEach(func() {
+		opts := make(map[string]string)
+		opts["s3_bucket_name"] = "bucket-name"
+
 		cfg.BusDumper = &config.DumpConfig{
-			Kind:         config.S3DumperKind,
-			S3BucketName: "my-bucket",
+			Kind:    config.S3DumperKind,
+			Options: opts,
 		}
 		cfg.TrainDumper = &config.DumpConfig{
-			Kind:         config.S3DumperKind,
-			S3BucketName: "my-bucket",
+			Kind:    config.S3DumperKind,
+			Options: opts,
 		}
 	})
 
@@ -39,7 +42,7 @@ var _ = Describe("BuildWorkList", func() {
 
 	When("the bus dumper can't be built", func() {
 		BeforeEach(func() {
-			cfg.BusDumper.S3BucketName = ""
+			cfg.BusDumper.Options = nil
 		})
 		It("fails", func() {
 			Expect(callErr).To(MatchError(ContainSubstring("failed to build bus dumper: dumper kind S3 requested but no s3 bucket name provided")))
@@ -48,7 +51,7 @@ var _ = Describe("BuildWorkList", func() {
 
 	When("the train dumper can't be built", func() {
 		BeforeEach(func() {
-			cfg.TrainDumper.S3BucketName = ""
+			cfg.TrainDumper.Options = nil
 		})
 		It("fails", func() {
 			Expect(callErr).To(MatchError(ContainSubstring("failed to build train dumper: dumper kind S3 requested but no s3 bucket name provided")))
