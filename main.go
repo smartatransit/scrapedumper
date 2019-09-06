@@ -39,7 +39,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var logger *zap.logger
+	var logger *zap.Logger
 	if opts.Debug {
 		logger, _ = zap.NewDevelopment()
 	} else {
