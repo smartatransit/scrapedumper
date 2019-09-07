@@ -15,6 +15,9 @@ import (
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/postgres"
+
+	//database/sql driver
+	_ "github.com/lib/pq"
 )
 
 //DumperKind is an enum type used to specify which type of dumper is being configured
