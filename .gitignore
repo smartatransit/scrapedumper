@@ -3,3 +3,4 @@
 *-data
 scrapedumper
 postgres-loader/postgres-loader
+vendor/
