@@ -52,7 +52,7 @@ func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
 		}
 
 		for i := range c.Components {
-			log.Debug("building component", i)
+			log.Debugf("building component %v", i)
 			var err error
 			componentDumpers[i], err = BuildDumper(log, c.Components[i])
 			if err != nil {
