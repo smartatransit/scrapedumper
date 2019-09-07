@@ -27,7 +27,7 @@ var _ = Describe("BuildDumper", func() {
 	})
 
 	JustBeforeEach(func() {
-		result, callErr = config.BuildDumper(nil, sqlOpen.Spy, cfg)
+		result, _, callErr = config.BuildDumper(nil, sqlOpen.Spy, cfg)
 	})
 
 	When("the Kind is RoundRobinKind", func() {

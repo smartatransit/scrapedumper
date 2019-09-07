@@ -13,7 +13,8 @@ var _ = Describe("BuildWorkList", func() {
 	var (
 		cfg config.WorkConfig
 
-		result  worker.WorkList
+		result worker.WorkList
+
 		callErr error
 	)
 
@@ -29,7 +30,7 @@ var _ = Describe("BuildWorkList", func() {
 	})
 
 	JustBeforeEach(func() {
-		result, callErr = config.BuildWorkList(nil, nil, cfg, martaapi.Client{}, martaapi.Client{})
+		result, _, callErr = config.BuildWorkList(nil, nil, cfg, martaapi.Client{}, martaapi.Client{})
 	})
 
 	It("builds a worklist", func() {

@@ -11,7 +11,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/jessevdk/go-flags"
+	flags "github.com/jessevdk/go-flags"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -70,7 +70,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer cleanup()
+	defer func() {
+		if cleanupErr := cleanup(); cleanupErr != nil {
+			logger.Error(cleanupErr.Error())
+		}
+	}()
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
