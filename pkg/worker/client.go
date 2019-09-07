@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/bipol/scrapedumper/pkg/circuitbreaker"
@@ -91,7 +92,7 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 			var err error
 			if c.cb != nil {
 				err = c.cb.Run(func() error {
-					innerErr := c.scrapeAndDump(ctx)
+					innerErr := c.scrapeAndDumpAll(ctx)
 					if innerErr != nil {
 						c.logger.Error(innerErr.Error())
 					}
@@ -102,7 +103,7 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 					return
 				}
 			} else {
-				err := c.scrapeAndDump(ctx)
+				err := c.scrapeAndDumpAll(ctx)
 				if err != nil {
 					errC <- err
 					return
@@ -113,20 +114,29 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 	}()
 }
 
-func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
+func (c ScrapeAndDumpClient) scrapeAndDumpAll(ctx context.Context) (err error) {
 	c.logger.Debug("scrape and dumping")
 	for _, sd := range c.workList.GetWork() {
-		reader, err := sd.Scraper.FindSchedules(ctx)
-		if err != nil {
-			return err
+		if sdErr := c.scrapeAndDump(ctx, sd); sdErr != nil {
+			err = sdErr
 		}
-		defer reader.Close()
-		t := time.Now().UTC()
-		path := fmt.Sprintf("%s/%s.json", sd.Scraper.Prefix(), t.Format(time.RFC3339))
-		err = sd.Dumper.Dump(ctx, reader, path)
-		if err != nil {
-			return err
-		}
+
+	}
+	return nil
+}
+
+func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context, sd ScrapeDump) (err error) {
+	var reader io.ReadCloser
+	reader, err = sd.Scraper.FindSchedules(ctx)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+	t := time.Now().UTC()
+	path := fmt.Sprintf("%s/%s.json", sd.Scraper.Prefix(), t.Format(time.RFC3339))
+	err = sd.Dumper.Dump(ctx, reader, path)
+	if err != nil {
+		return err
 	}
 	return nil
 }
