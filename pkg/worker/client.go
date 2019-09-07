@@ -108,11 +108,13 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 }
 
 func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
-	c.logger.Debug("scrape and dumping")
+	// c.logger.Debug("scrape and dumping")
+	c.logger.Debug(fmt.Sprintf("scrape and dumping %v items", len(c.workList.GetWork())))
 	for i, sd := range c.workList.GetWork() {
 		c.logger.Debug(fmt.Sprintf("scrape and dumping for worklist item %v", i))
 		reader, err := sd.Scraper.FindSchedules(ctx)
 		if err != nil {
+			c.logger.Error("FAILED SCRAPING")
 			return err
 		}
 		defer reader.Close()
@@ -120,6 +122,7 @@ func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 		path := fmt.Sprintf("%s/%s.json", sd.Scraper.Prefix(), t.Format(time.RFC3339))
 		err = sd.Dumper.Dump(ctx, reader, path)
 		if err != nil {
+			c.logger.Error("FAILED DUMPING")
 			return err
 		}
 	}
