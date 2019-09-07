@@ -60,7 +60,7 @@ func main() {
 	trainClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.RealtimeTrainTimeEndpoint, "train-data")
 	busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint, "bus-data")
 
-	workList, err := config.BuildWorkList(
+	workList, cleanup, err := config.BuildWorkList(
 		logger,
 		sql.Open,
 		wc,
@@ -70,6 +70,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer cleanup()
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
