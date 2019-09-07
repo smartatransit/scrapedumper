@@ -113,6 +113,16 @@ var _ = Describe("Dump", func() {
 				Expect(err).To(BeNil())
 			})
 		})
+		When("it fails to copy", func() {
+			BeforeEach(func() {
+				var w *io.PipeWriter
+				r, w = io.Pipe()
+				w.CloseWithError(errors.New("broken pipe"))
+			})
+			It("returns an error", func() {
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 	Context("DynamoDumpHandler", func() {
 		var (

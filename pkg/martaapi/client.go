@@ -119,5 +119,10 @@ func (c Client) FindSchedules(ctx context.Context) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request to the MARTA API failed with status `%v`", resp.StatusCode)
+	}
+
 	return resp.Body, nil
 }
