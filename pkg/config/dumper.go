@@ -1,6 +1,9 @@
 package config
 
 import (
+	"database/sql"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -11,6 +14,10 @@ import (
 
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/bipol/scrapedumper/pkg/postgres"
+
+	//database/sql driver
+	_ "github.com/lib/pq"
 )
 
 //DumperKind is an enum type used to specify which type of dumper is being configured
@@ -25,62 +32,114 @@ const (
 	S3DumperKind DumperKind = "S3"
 	//DynamoDBDumperKind creates a dumper that writes to a dynamodb table
 	DynamoDBDumperKind DumperKind = "DYNAMODB"
+	//PostgresDumperKind creates a dumper that writes to a postgres table
+	PostgresDumperKind DumperKind = "POSTGRES"
 )
 
 //DumpConfig specifies configuration for one dumper
 type DumpConfig struct {
 	Kind DumperKind `json:"kind"`
 
-	Components          []DumpConfig `json:"components"`
-	LocalOutputLocation string       `json:"local_output_location"`
-	S3BucketName        string       `json:"s3_bucket_name"`
-	DynamoTableName     string       `json:"dynamo_table_name"`
+	Components               []DumpConfig `json:"components"`
+	LocalOutputLocation      string       `json:"local_output_location"`
+	S3BucketName             string       `json:"s3_bucket_name"`
+	DynamoTableName          string       `json:"dynamo_table_name"`
+	PostgresConnectionString string       `json:"postgres_connection_string"`
 }
 
 //ErrDumperValidationFailed indicates that a dumper's configuration was invalid
 var ErrDumperValidationFailed = errors.New("dumper failed to build due to missing args")
 
-//BuildDumper builds the dumper described by the given config option
-func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
+//SQLOpener mocks out the database/sql.Open functino for testing
+//go:generate counterfeiter . SQLOpener
+type SQLOpener func(string, string) (*sql.DB, error)
+
+//CleanupFunc is used for cleaning up persistent resources used by dumpers
+type CleanupFunc func() error
+
+//NoopCleanup is a CleanupFunc that does nothing
+var NoopCleanup = func() (_ error) { return }
+
+//NewRoundRobinCleanup executes all cleanup funcs even if some
+//fail, and returns the last error.
+func NewRoundRobinCleanup(comps []CleanupFunc) CleanupFunc {
+	return func() (err error) {
+		for _, f := range comps {
+			if tmpErr := f(); tmpErr != nil {
+				err = tmpErr
+			}
+		}
+		return
+	}
+}
+
+//BuildDumper builds the dumper described by the given config option.
+//If no SQL-based dumpers are to be used, then `sqlOpen` is not required.
+func BuildDumper(
+	log *zap.Logger,
+	sqlOpen SQLOpener,
+	c DumpConfig,
+) (dumper.Dumper, CleanupFunc, error) {
 	switch c.Kind {
 	case RoundRobinKind:
 		componentDumpers := make([]dumper.Dumper, len(c.Components))
+		componentCleanups := make([]CleanupFunc, len(c.Components))
 		if len(c.Components) == 0 {
-			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no components provided: provide components using the config file, a command-line argument, or an environment variable", RoundRobinKind)
+			return nil, nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no components provided: provide components using the config file, a command-line argument, or an environment variable", RoundRobinKind)
 		}
 
 		for i := range c.Components {
 			var err error
-			componentDumpers[i], err = BuildDumper(log, c.Components[i])
+			componentDumpers[i], componentCleanups[i], err = BuildDumper(log, sqlOpen, c.Components[i])
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 		}
 
-		return dumper.NewRoundRobinDumpClient(log, componentDumpers...), nil
+		return dumper.NewRoundRobinDumpClient(log, componentDumpers...),
+			NewRoundRobinCleanup(componentCleanups), nil
 	case FileDumperKind:
 		if c.LocalOutputLocation == "" {
-			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no file output location provided: provide a local output location using the config file, a command-line argument, or an environment variable", FileDumperKind)
+			return nil, nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no file output location provided: provide a local output location using the config file, a command-line argument, or an environment variable", FileDumperKind)
 		}
 
-		return dumper.NewLocalDumpHandler(c.LocalOutputLocation, log, afero.NewOsFs()), nil
+		return dumper.NewLocalDumpHandler(c.LocalOutputLocation, log, afero.NewOsFs()), NoopCleanup, nil
 	case DynamoDBDumperKind:
 		if c.DynamoTableName == "" {
-			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no dynamo table name provided: provide a dynamo table name using the config file, a command-line argument, or an environment variable", DynamoDBDumperKind)
+			return nil, nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no dynamo table name provided: provide a dynamo table name using the config file, a command-line argument, or an environment variable", DynamoDBDumperKind)
 		}
 
 		dynamoClient := dynamodb.New(session.Must(session.NewSession()))
 
-		return dumper.NewDynamoDumpHandler(log, c.DynamoTableName, dynamoClient, martaapi.DigestScheduleResponse), nil
+		return dumper.NewDynamoDumpHandler(log, c.DynamoTableName, dynamoClient, martaapi.DigestScheduleResponse), NoopCleanup, nil
 	case S3DumperKind:
 		if c.S3BucketName == "" {
-			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no s3 bucket name provided: provide an s3 bucket name using the config file, a command-line argument, or an environment variable", S3DumperKind)
+			return nil, nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no s3 bucket name provided: provide an s3 bucket name using the config file, a command-line argument, or an environment variable", S3DumperKind)
 		}
 
 		s3Manager := s3manager.NewUploaderWithClient(s3.New(session.Must(session.NewSession())))
 
-		return dumper.NewS3DumpHandler(s3Manager, c.S3BucketName, log), nil
+		return dumper.NewS3DumpHandler(s3Manager, c.S3BucketName, log), NoopCleanup, nil
+	case PostgresDumperKind:
+		if c.PostgresConnectionString == "" {
+			return nil, nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no postgres connection string provided: provide a postgres connection string using the config file, a command-line argument, or an environment variable", PostgresDumperKind)
+		}
+
+		db, err := sqlOpen("postgres", c.PostgresConnectionString)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed connecting to postgres database")
+		}
+
+		repo := postgres.NewRepository(db)
+		err = repo.EnsureTables()
+		if err != nil {
+			db.Close()
+			return nil, nil, errors.Wrap(err, "failed to ensure postgres tables")
+		}
+
+		upserter := postgres.NewUpserter(repo, time.Hour)
+		return dumper.NewPostgresDumpHandler(log, upserter), db.Close, nil
 	default:
-		return nil, errors.Wrapf(ErrDumperValidationFailed, "unsupported dumper kind `%s`", string(c.Kind))
+		return nil, nil, errors.Wrapf(ErrDumperValidationFailed, "unsupported dumper kind `%s`", string(c.Kind))
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,7 +11,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/jessevdk/go-flags"
+	flags "github.com/jessevdk/go-flags"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -27,6 +28,7 @@ type options struct {
 	MartaAPIKey       string `long:"marta-api-key" env:"MARTA_API_KEY" description:"marta api key" required:"true"`
 	PollTimeInSeconds int    `long:"poll-time-in-seconds" env:"POLL_TIME_IN_SECONDS" description:"time to poll marta api every second" required:"true"`
 
+	Debug      bool    `long:"debug" env:"DEBUG" description:"enabled debug logging"`
 	ConfigPath *string `long:"config-path" env:"CONFIG_PATH" description:"An optional file that overrides the default configuration of sources and targets."`
 }
 
@@ -38,7 +40,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger, _ := zap.NewProduction()
+	var logger *zap.Logger
+	if opts.Debug {
+		logger, _ = zap.NewDevelopment()
+	} else {
+		logger, _ = zap.NewProduction()
+	}
 	defer func() {
 		_ = logger.Sync() // flushes buffer, if any
 	}()
@@ -53,8 +60,9 @@ func main() {
 	trainClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.RealtimeTrainTimeEndpoint, "train-data")
 	busClient := martaapi.New(&httpClient, opts.MartaAPIKey, logger, martaapi.BusEndpoint, "bus-data")
 
-	workList, err := config.BuildWorkList(
+	workList, cleanup, err := config.BuildWorkList(
 		logger,
+		sql.Open,
 		wc,
 		busClient,
 		trainClient,
@@ -62,6 +70,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer func() {
+		if cleanupErr := cleanup(); cleanupErr != nil {
+			logger.Error(cleanupErr.Error())
+		}
+	}()
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
@@ -86,7 +99,6 @@ func main() {
 		logger.Info("interrupt signal received")
 		logger.Info("shutting down...")
 	}
-
 }
 
 //GetWorkConfig gets the WorkConfig either from a JSON file or from

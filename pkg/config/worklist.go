@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/worker"
 	"github.com/pkg/errors"
@@ -18,26 +19,34 @@ type WorkConfig struct {
 //and dumper config
 func BuildWorkList(
 	log *zap.Logger,
+	sqlOpen SQLOpener,
 	c WorkConfig,
 	busClient martaapi.Client,
 	trainClient martaapi.Client,
-) (workList worker.WorkList, err error) {
+) (workList worker.WorkList, f CleanupFunc, err error) {
+	var cleanups []CleanupFunc
+	var cleanup CleanupFunc
 	if c.BusDumper != nil {
-		busDumper, err := BuildDumper(log, *c.BusDumper)
+		var busDumper dumper.Dumper
+		busDumper, cleanup, err = BuildDumper(log, sqlOpen, *c.BusDumper)
 		if err != nil {
 			err = errors.Wrap(err, "failed to build bus dumper")
-			return workList, err
+			return
 		}
+		cleanups = append(cleanups, cleanup)
 		workList.AddWork(busClient, busDumper)
 	}
 
 	if c.TrainDumper != nil {
-		trainDumper, err := BuildDumper(log, *c.TrainDumper)
+		var trainDumper dumper.Dumper
+		trainDumper, cleanup, err = BuildDumper(log, sqlOpen, *c.TrainDumper)
 		if err != nil {
 			err = errors.Wrap(err, "failed to build train dumper")
-			return workList, err
+			return
 		}
+		cleanups = append(cleanups, cleanup)
 		workList.AddWork(trainClient, trainDumper)
 	}
+	f = NewRoundRobinCleanup(cleanups)
 	return
 }

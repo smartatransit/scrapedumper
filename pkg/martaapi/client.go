@@ -5,9 +5,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"go.uber.org/zap"
 )
+
+//Direction Direction
+type Direction string
+
+//Line Line
+type Line string
+
+//Station Station
+type Station string
+
+//MartaAPIDatetimeFormat is the datetime format used by the MARTA API
+const MartaAPIDatetimeFormat = "1/2/2006 " + MartaAPITimeFormat
+
+//MartaAPITimeFormat is the time format used by the MARTA API
+const MartaAPITimeFormat = "3:04:05 PM"
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ScheduleFinder
 type ScheduleFinder interface {
@@ -28,6 +44,17 @@ type Schedule struct {
 	WaitingSeconds string `json:"WAITING_SECONDS"`
 	WaitingTime    string `json:"WAITING_TIME"`
 	TTL            int64  `json:"TTL"`
+}
+
+func (s Schedule) HasArrived() bool {
+	code := strings.ToUpper(s.WaitingTime)
+	return (code == "ARRIVING") ||
+		(code == "ARRIVED") ||
+		(code == "BOARDING")
+}
+
+func (s Schedule) String() string {
+	return fmt.Sprintf("%s:%s:%s:%s:%s:%t", s.Direction, s.Line, s.Destination, s.TrainID, s.EventTime, s.HasArrived())
 }
 
 const (

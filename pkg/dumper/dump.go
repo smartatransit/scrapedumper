@@ -3,6 +3,7 @@ package dumper
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +16,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"go.uber.org/zap"
+
+	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/bipol/scrapedumper/pkg/postgres"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Dumper
@@ -168,5 +172,38 @@ func (c DynamoDumpHandler) Dump(ctx context.Context, r io.Reader, path string) e
 			return err
 		}
 	}
+	return nil
+}
+
+// PostgresDumpHandler will write a scrape into postgres
+type PostgresDumpHandler struct {
+	logger   *zap.Logger
+	upserter postgres.Upserter
+}
+
+// NewPostgresDumpHandler instantiates a new dynamo dump handler
+func NewPostgresDumpHandler(logger *zap.Logger, upserter postgres.Upserter) PostgresDumpHandler {
+	return PostgresDumpHandler{
+		logger,
+		upserter,
+	}
+}
+
+func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string) error {
+	c.logger.Debug("Postgres dump")
+
+	var records []martaapi.Schedule
+	err := json.NewDecoder(r).Decode(&records)
+	if err != nil {
+		return err
+	}
+
+	for _, rec := range records {
+		err := c.upserter.AddRecordToDatabase(rec)
+		if err != nil {
+			c.logger.Error(fmt.Sprintf("failed to upsert MARTA API response to postgres: %s", err.Error()))
+		}
+	}
+
 	return nil
 }
