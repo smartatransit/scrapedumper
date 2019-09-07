@@ -42,19 +42,23 @@ func NewRoundRobinDumpClient(logger *zap.Logger, clients ...Dumper) RoundRobinDu
 }
 
 func (c RoundRobinDumpClient) Dump(ctx context.Context, r io.Reader, path string) error {
+	c.logger.Debug("Roundrobin dump in progress")
 	// this could potentially load a lot into memory, but we have to buffer it somehow so that we can read it into multiple
 	// dump clients.  This could potentially be better if we use Go pipelining here, but for now i'm keeping it as is
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err
 	}
-	for _, client := range c.clients {
+	c.logger.Debug("bouta start on the components")
+	for i, client := range c.clients {
+		c.logger.Debug("using component", i)
 		br := bytes.NewReader(b)
 		err := client.Dump(ctx, br, path)
 		if err != nil {
 			return err
 		}
 	}
+	c.logger.Debug("components used")
 	return err
 }
 

@@ -44,21 +44,26 @@ var ErrDumperValidationFailed = errors.New("dumper failed to build due to missin
 func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
 	switch c.Kind {
 	case RoundRobinKind:
+		log.Debug("building a roundrobin dumper")
 		componentDumpers := make([]dumper.Dumper, len(c.Components))
 		if len(c.Components) == 0 {
+			log.Debug("no components")
 			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no components provided: provide components using the config file, a command-line argument, or an environment variable", RoundRobinKind)
 		}
 
 		for i := range c.Components {
+			log.Debug("building component", i)
 			var err error
 			componentDumpers[i], err = BuildDumper(log, c.Components[i])
 			if err != nil {
 				return nil, err
 			}
+			log.Debug("component built", i)
 		}
 
 		return dumper.NewRoundRobinDumpClient(log, componentDumpers...), nil
 	case FileDumperKind:
+		log.Debug("building a file dumper")
 		if c.LocalOutputLocation == "" {
 			return nil, errors.Wrapf(ErrDumperValidationFailed, "dumper kind %s requested but no file output location provided: provide a local output location using the config file, a command-line argument, or an environment variable", FileDumperKind)
 		}
