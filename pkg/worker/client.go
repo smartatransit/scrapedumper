@@ -109,7 +109,8 @@ func (c ScrapeAndDumpClient) Poll(ctx context.Context, errC chan error) {
 
 func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context) error {
 	c.logger.Debug("scrape and dumping")
-	for _, sd := range c.workList.GetWork() {
+	for i, sd := range c.workList.GetWork() {
+		c.logger.Debug(fmt.Sprintf("scrape and dumping for worklist item %v", i))
 		reader, err := sd.Scraper.FindSchedules(ctx)
 		if err != nil {
 			return err

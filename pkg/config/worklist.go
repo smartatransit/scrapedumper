@@ -41,5 +41,6 @@ func BuildWorkList(
 		}
 		workList.AddWork(trainClient, trainDumper)
 	}
+	spew.Dump(workList)
 	return
 }
