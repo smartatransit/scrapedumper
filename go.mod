@@ -2,7 +2,7 @@ module github.com/bipol/scrapedumper
 
 require (
 	github.com/aws/aws-sdk-go v1.19.28
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.1
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.1

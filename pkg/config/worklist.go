@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/worker"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -22,6 +23,7 @@ func BuildWorkList(
 	busClient martaapi.Client,
 	trainClient martaapi.Client,
 ) (workList worker.WorkList, err error) {
+	spew.Dump(c)
 	if c.BusDumper != nil {
 		busDumper, err := BuildDumper(log, *c.BusDumper)
 		if err != nil {
