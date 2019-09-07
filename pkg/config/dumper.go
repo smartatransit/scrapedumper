@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -52,13 +54,13 @@ func BuildDumper(log *zap.Logger, c DumpConfig) (dumper.Dumper, error) {
 		}
 
 		for i := range c.Components {
-			log.Debugf("building component %v", i)
+			log.Debug(fmt.Sprintf("building component %v", i))
 			var err error
 			componentDumpers[i], err = BuildDumper(log, c.Components[i])
 			if err != nil {
 				return nil, err
 			}
-			log.Debug("component built", i)
+			log.Debug(fmt.Sprintf("component built %v", i))
 		}
 
 		return dumper.NewRoundRobinDumpClient(log, componentDumpers...), nil

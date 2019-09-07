@@ -51,7 +51,7 @@ func (c RoundRobinDumpClient) Dump(ctx context.Context, r io.Reader, path string
 	}
 	c.logger.Debug("bouta start on the components")
 	for i, client := range c.clients {
-		c.logger.Debugf("using component %v", i)
+		c.logger.Debug(fmt.Sprintf("using component %v", i))
 		br := bytes.NewReader(b)
 		err := client.Dump(ctx, br, path)
 		if err != nil {
