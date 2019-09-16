@@ -159,21 +159,6 @@ var eastCorePositions = map[Station]int{
 	KensingtonStation:          +5,
 	IndianCreekStation:         +6,
 }
-var westCorePositions = map[Station]int{
-	IndianCreekStation:         -6,
-	KensingtonStation:          -5,
-	AvondaleStation:            -4,
-	DecaturStation:             -3,
-	EastLakeStation:            -2,
-	EdgewoodCandlerParkStation: -1,
-	InmanParkStation:           0,
-	KingMemorialStation:        +1,
-	GeorgiaStateStation:        +2,
-	FivePointsStation:          +3,
-	OmniDomeStation:            +4,
-	VineCityStation:            +5,
-	AshbyStation:               +6,
-}
 var northCorePositions = map[Station]int{
 	AirportStation:         -7,
 	CollegeParkStation:     -6,
