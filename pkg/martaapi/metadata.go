@@ -13,9 +13,6 @@ package martaapi
 //The implementation is meant to be generally robust to missing
 // values, although it may not currently be maximally robust.
 func ClassifySequenceList(stationSeq []Station, line Line, dir Direction) (Line, Direction) {
-	//TODO add up the EW-onlies and the NS-onlies
-	//if one is nonzero,
-
 	goldScore := 0
 	redScore := 0
 	ewScore := 0
