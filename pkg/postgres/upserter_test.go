@@ -68,29 +68,48 @@ var _ = Describe("Upserter", func() {
 				Expect(callErr).To(MatchError("failed to get latest run start moment for record `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: query failed"))
 			})
 		})
-		When("ensuring the arrival record fails", func() {
+		When("the latest run is stale", func() {
 			BeforeEach(func() {
-				repo.EnsureArrivalRecordReturns(errors.New("query failed"))
+				repo.GetLatestRunStartMomentForReturns(
+					postgres.EasternTime(time.Time{}),
+					easternDate(2019, time.June, 18, 21, 43, 2, 0),
+					nil,
+				)
 			})
-			It("fails", func() {
-				Expect(callErr).To(MatchError("failed to ensure pre-existing arrival record for `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: query failed"))
-				_, _, _, runStartMoment, _ := repo.EnsureArrivalRecordArgsForCall(0)
-				Expect(runStartMoment).To(Equal(easternDate(2019, time.June, 18, 21, 42, 2, 0)))
-			})
-
-			When("the latest run is stale", func() {
+			When("creating a new run fails", func() {
 				BeforeEach(func() {
-					repo.GetLatestRunStartMomentForReturns(
-						postgres.EasternTime(time.Time{}),
-						easternDate(2019, time.June, 18, 21, 43, 2, 0),
-						nil,
-					)
+					repo.CreateRunRecordReturns(errors.New("create run failed"))
+				})
+				It("fails", func() {
+					Expect(callErr).To(MatchError("failed to create run record for `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: create run failed"))
+
+					_, _, _, runStartMoment := repo.CreateRunRecordArgsForCall(0)
+					Expect(runStartMoment).To(Equal(easternDate(2019, time.June, 18, 21, 41, 2, 0)))
+				})
+			})
+		})
+		When("the latest run is not stale", func() {
+			When("ensuring the arrival record fails", func() {
+				BeforeEach(func() {
+					repo.EnsureArrivalRecordReturns(errors.New("query failed"))
 				})
 				It("fails", func() {
 					Expect(callErr).To(MatchError("failed to ensure pre-existing arrival record for `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: query failed"))
-
 					_, _, _, runStartMoment, _ := repo.EnsureArrivalRecordArgsForCall(0)
-					Expect(runStartMoment).To(Equal(easternDate(2019, time.June, 18, 21, 41, 2, 0)))
+					Expect(runStartMoment).To(Equal(easternDate(2019, time.June, 18, 21, 42, 2, 0)))
+				})
+			})
+		})
+		When("the train has arrived", func() {
+			BeforeEach(func() {
+				rec.WaitingTime = "Arrived"
+			})
+			When("setting the arrival time fails", func() {
+				BeforeEach(func() {
+					repo.SetArrivalTimeReturns(errors.New("query failed"))
+				})
+				It("fails", func() {
+					Expect(callErr).To(MatchError("failed to set arrival time from record `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:true`: query failed"))
 				})
 			})
 		})
@@ -103,7 +122,9 @@ var _ = Describe("Upserter", func() {
 					repo.SetArrivalTimeReturns(errors.New("query failed"))
 				})
 				It("fails", func() {
-					Expect(callErr).To(MatchError("failed to set arrival time from record `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:true`: query failed"))
+					Expect(callErr).To(BeNil())
+					Expect(repo.SetArrivalTimeCallCount()).To(BeZero())
+					Expect(repo.AddArrivalEstimateCallCount()).To(BeZero())
 				})
 			})
 		})

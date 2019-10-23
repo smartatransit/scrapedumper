@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"go.uber.org/zap"
 
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/postgres"
@@ -33,58 +34,157 @@ var _ = Describe("Repository", func() {
 	})
 
 	JustBeforeEach(func() {
-		repo = postgres.NewRepository(db)
+		repo = postgres.NewRepository(zap.NewNop(), db)
 	})
 
 	Describe("EnsureTables", func() {
 		var callErr error
 
-		var expectTableExec = func() *sqlmock.ExpectedExec {
+		var expectRunsTableExec = func() *sqlmock.ExpectedExec {
 			return smock.ExpectExec(`
-CREATE TABLE IF NOT EXISTS "arrivals"
-\(	"identifier" text,
-	"run_identifier" text,
-	"run_group_identifier" text,
-	"most_recent_event_moment" text,
-	"direction" text,
-	"line" text,
-	"train_id" text,
-	"run_first_event_moment" text,
-	"station" text,
-	"arrival_time" text,
-	"arrival_estimates" text,
-	PRIMARY KEY \("identifier"\)
+CREATE TABLE IF NOT EXISTS runs
+\(	identifier text,
+	run_group_identifier text NOT NULL,
+	most_recent_event_moment varchar NOT NULL,
+	run_first_event_moment varchar NOT NULL,
+	PRIMARY KEY \(identifier\)
+\)`)
+		}
+		var expectArrivalsTableExec = func() *sqlmock.ExpectedExec {
+			return smock.ExpectExec(`
+CREATE TABLE IF NOT EXISTS arrivals
+\(	identifier text,
+	run_identifier text NOT NULL,
+	station text NOT NULL,
+	arrival_time varchar,
+	PRIMARY KEY \(identifier\)
+\)`)
+		}
+		var expectEstimatesTableExec = func() *sqlmock.ExpectedExec {
+			return smock.ExpectExec(`
+CREATE TABLE IF NOT EXISTS estimates
+\(	identifier text,
+	run_identifier text NOT NULL,
+	arrival_identifier text NOT NULL,
+	estimate_moment varchar NOT NULL,
+	estimated_arrival_time varchar NOT NULL,
+	PRIMARY KEY \(identifier\)
+\)`)
+		}
+		var expectRunGroupIndexExec = func() *sqlmock.ExpectedExec {
+			return smock.ExpectExec(`CREATE INDEX ON runs USING btree\(run_group_identifier\)`)
+		}
+		var expectRunIndexExec = func() *sqlmock.ExpectedExec {
+			return smock.ExpectExec(`CREATE INDEX ON arrivals USING btree\(run_identifier\)`)
+		}
+		var expectArrivalIndexExec = func() *sqlmock.ExpectedExec {
+			return smock.ExpectExec(`CREATE INDEX ON estimates USING btree\(arrival_identifier\)`)
+		}
+		var expectEstimatesByRunIndexExec = func() *sqlmock.ExpectedExec {
+			return smock.ExpectExec(`CREATE INDEX ON estimates USING btree\(run_identifier\)`)
+		}
+		var expectLatestRunIndexExec = func() *sqlmock.ExpectedExec {
+			return smock.ExpectExec(`
+CREATE INDEX ON runs USING btree\(
+	run_group_identifier,
+	run_first_event_moment DESC,
+	most_recent_event_moment DESC
 \)`)
 		}
 
-		var expectIndexExec = func() *sqlmock.ExpectedExec {
-			return smock.ExpectExec(`
-CREATE INDEX ON arrivals
-USING btree
-\(	run_group_identifier,
-	run_first_event_moment DESC,
-	most_recent_event_moment DESC,
-	identifier
-\)`)
-		}
 		JustBeforeEach(func() {
 			callErr = repo.EnsureTables()
 		})
-		When("the table query fails", func() {
+		When("the runs table fails", func() {
 			BeforeEach(func() {
-				expectTableExec().WillReturnError(errors.New("query failed"))
+				expectRunsTableExec().WillReturnError(errors.New("exec failed"))
 			})
 			It("fails", func() {
-				Expect(callErr).To(MatchError("failed to ensure arrivals table: query failed"))
+				Expect(callErr).To(MatchError("failed to ensure runs table: exec failed"))
 			})
 		})
-		When("the index query fails", func() {
+		When("the arrivals table fails", func() {
 			BeforeEach(func() {
-				expectTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
-				expectIndexExec().WillReturnError(errors.New("query failed"))
+				expectRunsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectArrivalsTableExec().WillReturnError(errors.New("exec failed"))
 			})
 			It("fails", func() {
-				Expect(callErr).To(MatchError("failed to ensure arrivals index: query failed"))
+				Expect(callErr).To(MatchError("failed to ensure arrivals table: exec failed"))
+			})
+		})
+		When("the estimates table fails", func() {
+			BeforeEach(func() {
+				expectRunsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectArrivalsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectEstimatesTableExec().WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to ensure estimates table: exec failed"))
+			})
+		})
+		When("the run group index fails", func() {
+			BeforeEach(func() {
+				expectRunsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectArrivalsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectEstimatesTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectRunGroupIndexExec().WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to index runs by run group: exec failed"))
+			})
+		})
+		When("the run index fails", func() {
+			BeforeEach(func() {
+				expectRunsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectArrivalsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectEstimatesTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectRunGroupIndexExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectRunIndexExec().WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to index arrivals by run: exec failed"))
+			})
+		})
+		When("the arrival index fails", func() {
+			BeforeEach(func() {
+				expectRunsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectArrivalsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectEstimatesTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectRunGroupIndexExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectRunIndexExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectArrivalIndexExec().WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to index estimates by arrival: exec failed"))
+			})
+		})
+		When("the estimates-by-run index fails", func() {
+			BeforeEach(func() {
+				expectRunsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectArrivalsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectEstimatesTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectRunGroupIndexExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectRunIndexExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectArrivalIndexExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectEstimatesByRunIndexExec().WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to index estimates by run: exec failed"))
+			})
+		})
+		When("the latest-matching-run index fails", func() {
+			BeforeEach(func() {
+				expectRunsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectArrivalsTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectEstimatesTableExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectRunGroupIndexExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectRunIndexExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectArrivalIndexExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectEstimatesByRunIndexExec().WillReturnResult(sqlmock.NewResult(0, 0))
+				expectLatestRunIndexExec().WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to index runs for upserting: exec failed"))
 			})
 		})
 	})
@@ -100,10 +200,10 @@ USING btree
 		)
 		BeforeEach(func() {
 			query = smock.ExpectQuery(`
-SELECT run_first_event_moment, most_recent_event_moment
-FROM "arrivals"
-WHERE run_group_identifier = \$1 AND most_recent_event_moment < \$2
-ORDER BY run_first_event_moment DESC, most_recent_event_moment DESC, identifier ASC
+SELECT run_first_event_moment, runs.most_recent_event_moment
+FROM arrivals JOIN runs ON runs.identifier = arrivals.run_identifier
+WHERE run_group_identifier = \$1 AND runs.most_recent_event_moment <= \$2
+ORDER BY run_first_event_moment DESC, runs.most_recent_event_moment DESC, arrivals.identifier ASC
 LIMIT 1`).
 				WithArgs("N_GOLD_193230", "2019-08-05T18:15:16-04:00")
 
@@ -159,6 +259,64 @@ LIMIT 1`).
 		})
 	})
 
+	Describe("CreateRunRecord", func() {
+		var (
+			callErr error
+
+			exec *sqlmock.ExpectedExec
+		)
+		BeforeEach(func() {
+			exec = smock.ExpectExec(`
+INSERT INTO runs
+\(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment\)
+VALUES \(\$1, \$2, \$3, \$4\)`).
+				WithArgs(
+					"N_GOLD_193230_2019-08-05T18:15:16-04:00",
+					"N_GOLD_193230",
+					easternDate(2019, time.August, 5, 18, 15, 16, 0),
+					easternDate(2019, time.August, 5, 18, 15, 16, 0),
+				)
+			exec.WillReturnResult(sqlmock.NewResult(0, 1))
+		})
+		JustBeforeEach(func() {
+			callErr = repo.CreateRunRecord(
+				martaapi.Direction("N"),
+				martaapi.Line("GOLD"),
+				"193230",
+				easternDate(2019, time.August, 5, 18, 15, 16, 0),
+			)
+		})
+		When("the query fails", func() {
+			BeforeEach(func() {
+				exec.WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to create run for dir `N` line `GOLD` train `193230` and first event moment `2019-08-05T18:15:16-04:00`: exec failed"))
+			})
+		})
+		When("the update result errors out", func() {
+			BeforeEach(func() {
+				exec.WillReturnResult(sqlmock.NewErrorResult(errors.New("can't get rows-affected")))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("received malformed result when creating run for dir `N` line `GOLD` train `193230` and first event moment `2019-08-05T18:15:16-04:00`: can't get rows-affected"))
+			})
+		})
+		When("the update doesn't affect any rows", func() {
+			BeforeEach(func() {
+				exec.WillReturnResult(sqlmock.NewResult(0, 0))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("create-run query unexpectedly affected 0 rows - expected 1"))
+			})
+		})
+		When("all goes well", func() {
+			It("fails", func() {
+				Expect(callErr).To(BeNil())
+			})
+		})
+	})
+
 	Describe("EnsureArrivalRecord", func() {
 		var (
 			callErr error
@@ -167,22 +325,14 @@ LIMIT 1`).
 		)
 		BeforeEach(func() {
 			exec = smock.ExpectExec(`
-INSERT INTO "arrivals"
-\("identifier", "run_identifier", "run_group_identifier", "most_recent_event_moment", "direction", "line", "train_id", "run_first_event_moment", "station", "arrival_time", "arrival_estimates"\)
-VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11\)
+INSERT INTO arrivals
+\(identifier, run_identifier, station\)
+VALUES \(\$1, \$2, \$3\)
 ON CONFLICT DO NOTHING`).
 				WithArgs(
 					"N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS",
 					"N_GOLD_193230_2019-08-05T18:15:16-04:00",
-					"N_GOLD_193230",
-					easternDate(2019, time.August, 5, 18, 15, 16, 0),
-					"N",
-					"GOLD",
-					"193230",
-					easternDate(2019, time.August, 5, 18, 15, 16, 0),
 					"FIVE POINTS",
-					postgres.EasternTime(time.Time{}),
-					postgres.ArrivalEstimates(map[string]string{}),
 				)
 			exec.WillReturnResult(sqlmock.NewResult(0, 0))
 		})
@@ -203,52 +353,47 @@ ON CONFLICT DO NOTHING`).
 				Expect(callErr).To(MatchError("failed to ensure arrival for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00` and station `FIVE POINTS`: query failed"))
 			})
 		})
-		When("all goes well", func() {
-			It("succeeds", func() {
-				Expect(callErr).To(BeNil())
-			})
-		})
 	})
 
 	Describe("AddArrivalEstimate", func() {
 		var (
 			callErr error
 
-			query *sqlmock.ExpectedQuery
-			rows  *sqlmock.Rows
-
-			exec      *sqlmock.ExpectedExec
+			begin     *sqlmock.ExpectedBegin
+			firstExec *sqlmock.ExpectedExec
+			touchExec *sqlmock.ExpectedExec
 			eventTime postgres.EasternTime
-
-			expectedJSONString string
 		)
 		BeforeEach(func() {
-			query = smock.ExpectQuery(`
-SELECT arrival_estimates
-FROM "arrivals"
-WHERE "arrivals"\."identifier" = \$1
-LIMIT 1`).
-				WithArgs("N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS")
+			begin = smock.ExpectBegin()
 
-			rows = sqlmock.NewRows([]string{"arrival_estimates"})
-			rows.AddRow(`{"2019-08-05T19:15:16-04:00":"2019-08-05T22:15:16-04:00"}`)
-			query.WillReturnRows(rows)
+			firstExec = smock.ExpectExec(`
+INSERT INTO estimates
+\(identifier, run_identifier, arrival_identifier, estimate_moment, estimated_arrival_time\)
+VALUES \(\$1, \$2, \$3, \$4, \$5\)
+ON CONFLICT DO NOTHING`)
+			firstExec.WillReturnResult(sqlmock.NewResult(0, 0))
 
-			exec = smock.ExpectExec(`
-UPDATE "arrivals"
-SET \("arrival_estimates", "most_recent_event_moment"\)
-  = \(\$1, \$2\)
-WHERE "arrivals"\."identifier" = \$3`)
-			exec.WillReturnResult(sqlmock.NewResult(0, 0))
+			touchExec = smock.ExpectExec(`
+UPDATE runs
+SET most_recent_event_moment = \$1
+WHERE identifier = \$2`)
 
 			eventTime = easternDate(2019, time.August, 5, 20, 15, 16, 0)
-			expectedJSONString = `{"2019-08-05T19:15:16-04:00":"2019-08-05T22:15:16-04:00","2019-08-05T20:15:16-04:00":"2019-08-05T22:15:16-04:00"}`
+			touchExec.WillReturnResult(sqlmock.NewResult(0, 1))
 		})
 		JustBeforeEach(func() {
-			exec.WithArgs(
-				expectedJSONString,
-				easternDate(2019, time.August, 5, 20, 15, 16, 0),
+			firstExec.WithArgs(
+				"N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS_2019-08-05T20:15:16-04:00",
+				"N_GOLD_193230_2019-08-05T18:15:16-04:00",
 				"N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS",
+				easternDate(2019, time.August, 5, 20, 15, 16, 0),
+				easternDate(2019, time.August, 5, 22, 15, 16, 0),
+			)
+
+			touchExec.WithArgs(
+				easternDate(2019, time.August, 5, 20, 15, 16, 0),
+				"N_GOLD_193230_2019-08-05T18:15:16-04:00",
 			)
 
 			callErr = repo.AddArrivalEstimate(
@@ -261,50 +406,52 @@ WHERE "arrivals"\."identifier" = \$3`)
 				easternDate(2019, time.August, 5, 22, 15, 16, 0),
 			)
 		})
-		When("the query fails", func() {
+		When("beginning the transaction fails", func() {
 			BeforeEach(func() {
-				query.WillReturnError(errors.New("query failed"))
+				begin.WillReturnError(errors.New("begin failed"))
 			})
 			It("fails", func() {
-				Expect(callErr).To(MatchError("failed to get arrival for `N` line `GOLD` and train `193230`: query failed"))
+				Expect(callErr).To(MatchError("failed to begin transaction to add arrival estimate for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00` and station `FIVE POINTS`: begin failed"))
 			})
 		})
-		//this provides test coverage to the ArrivalEstimates#Scan method
-		When("the query returns an int for `arrival_estimates`", func() {
+		When("the first update fails", func() {
 			BeforeEach(func() {
-				rows := sqlmock.NewRows([]string{"arrival_estimates"})
-				rows.AddRow(5)
-				query.WillReturnRows(rows)
-			})
-			It("fails", func() {
-				Expect(callErr).To(MatchError("failed to get arrival for `N` line `GOLD` and train `193230`: sql: Scan error on column index 0, name \"arrival_estimates\": expected string, got int64"))
-			})
-		})
-		When("the update fails", func() {
-			BeforeEach(func() {
-				exec.WillReturnError(errors.New("exec failed"))
+				firstExec.WillReturnError(errors.New("exec failed"))
 			})
 			It("fails", func() {
 				Expect(callErr).To(MatchError("failed to add arrival estimate for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00` and station `FIVE POINTS`: exec failed"))
 			})
 		})
-		When("all goes well", func() {
-			When("there's no collision", func() {
-				BeforeEach(func() {
-					expectedJSONString = `{"2019-08-05T19:15:16-04:00":"2019-08-05T22:15:16-04:00","2019-08-05T20:15:16-04:00":"2019-08-05T22:15:16-04:00"}`
-				})
-				It("succeeds", func() {
-					Expect(callErr).To(BeNil())
-				})
+		When("the touch update fails", func() {
+			BeforeEach(func() {
+				touchExec.WillReturnError(errors.New("exec failed"))
 			})
-
-			When("the event time already has an estimate recorded", func() {
-				BeforeEach(func() {
-					eventTime = easternDate(2019, time.August, 5, 19, 15, 16, 0)
-				})
-				It("fails", func() {
-					Expect(callErr).To(BeNil())
-				})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to touch run for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00`: exec failed"))
+			})
+		})
+		When("the touch result errors out", func() {
+			BeforeEach(func() {
+				touchExec.WillReturnResult(sqlmock.NewErrorResult(errors.New("can't get rows-affected")))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("received malformed result when touching run for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00`: can't get rows-affected"))
+			})
+		})
+		When("the touch doesn't affect any rows", func() {
+			BeforeEach(func() {
+				touchExec.WillReturnResult(sqlmock.NewResult(0, 0))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("touch-run query unexpectedly affected 0 rows - expected 1"))
+			})
+		})
+		When("the update succeeds", func() {
+			BeforeEach(func() {
+				smock.ExpectCommit().WillReturnError(errors.New("commit failed"))
+			})
+			It("succeeds", func() {
+				Expect(callErr).To(MatchError("failed to commit transaction when setting arrival time for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00` and station `FIVE POINTS`: commit failed"))
 			})
 		})
 	})
@@ -313,22 +460,33 @@ WHERE "arrivals"\."identifier" = \$3`)
 		var (
 			callErr error
 
-			exec *sqlmock.ExpectedExec
+			begin     *sqlmock.ExpectedBegin
+			firstExec *sqlmock.ExpectedExec
+			touchExec *sqlmock.ExpectedExec
 		)
 		BeforeEach(func() {
-			exec = smock.ExpectExec(`
-UPDATE "arrivals"
-SET \("arrival_time", "most_recent_event_moment"\)
-  = \(\$1, \$2\)
-WHERE "arrivals"."identifier" = \$3
-  AND "arrival_time" = \$4`).
+			begin = smock.ExpectBegin()
+
+			firstExec = smock.ExpectExec(`
+UPDATE arrivals
+SET arrival_time = \$1
+WHERE arrivals.identifier = \$2
+  AND arrival_time IS NULL`).
 				WithArgs(
 					easternDate(2019, time.August, 5, 22, 15, 16, 0),
-					easternDate(2019, time.August, 5, 20, 15, 16, 0),
 					"N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS",
-					postgres.EasternTime(time.Time{}),
 				)
-			exec.WillReturnResult(sqlmock.NewResult(0, 0))
+			firstExec.WillReturnResult(sqlmock.NewResult(0, 1))
+
+			touchExec = smock.ExpectExec(`
+UPDATE runs
+SET most_recent_event_moment = \$1
+WHERE identifier = \$2`).
+				WithArgs(
+					easternDate(2019, time.August, 5, 20, 15, 16, 0),
+					"N_GOLD_193230_2019-08-05T18:15:16-04:00",
+				)
+			touchExec.WillReturnResult(sqlmock.NewResult(0, 1))
 		})
 		JustBeforeEach(func() {
 			callErr = repo.SetArrivalTime(
@@ -341,17 +499,36 @@ WHERE "arrivals"."identifier" = \$3
 				easternDate(2019, time.August, 5, 22, 15, 16, 0),
 			)
 		})
-		When("the query fails", func() {
+		When("beginning the transaction fails", func() {
 			BeforeEach(func() {
-				exec.WillReturnError(errors.New("query failed"))
+				begin.WillReturnError(errors.New("begin failed"))
 			})
 			It("fails", func() {
-				Expect(callErr).To(MatchError("failed to set arrival time for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00` and station `FIVE POINTS`: query failed"))
+				Expect(callErr).To(MatchError("failed to begin transaction to set arrival time for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00` and station `FIVE POINTS`: begin failed"))
 			})
 		})
-		When("all goes well", func() {
+		When("the update fails", func() {
+			BeforeEach(func() {
+				firstExec.WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to set arrival time for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00` and station `FIVE POINTS`: exec failed"))
+			})
+		})
+		When("touching the run fails", func() {
+			BeforeEach(func() {
+				touchExec.WillReturnResult(sqlmock.NewResult(0, 0))
+			})
 			It("succeeds", func() {
-				Expect(callErr).To(BeNil())
+				Expect(callErr).To(MatchError("touch-run query unexpectedly affected 0 rows - expected 1"))
+			})
+		})
+		When("committing the transaction fails", func() {
+			BeforeEach(func() {
+				smock.ExpectCommit().WillReturnError(errors.New("commit failed"))
+			})
+			It("succeeds", func() {
+				Expect(callErr).To(MatchError("failed to commit transaction when setting arrival time for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00` and station `FIVE POINTS`: commit failed"))
 			})
 		})
 	})

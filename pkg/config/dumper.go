@@ -130,7 +130,7 @@ func BuildDumper(
 			return nil, nil, errors.Wrapf(err, "failed connecting to postgres database")
 		}
 
-		repo := postgres.NewRepository(db)
+		repo := postgres.NewRepository(log, db)
 		err = repo.EnsureTables()
 		if err != nil {
 			db.Close()
