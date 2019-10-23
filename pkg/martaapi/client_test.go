@@ -79,12 +79,20 @@ var _ = Describe("Client", func() {
 })
 
 var _ = Describe("Schedule", func() {
-	Describe("HarArrived", func() {
+	Describe("HasArrived", func() {
 		It("works", func() {
-			Expect(martaapi.Schedule{WaitingTime: "ArrIVIng"}.HasArrived()).To(BeTrue())
+			Expect(martaapi.Schedule{WaitingTime: "ArrIVIng"}.HasArrived()).To(BeFalse())
 			Expect(martaapi.Schedule{WaitingTime: "arrIVED"}.HasArrived()).To(BeTrue())
 			Expect(martaapi.Schedule{WaitingTime: "boarDING"}.HasArrived()).To(BeTrue())
 			Expect(martaapi.Schedule{WaitingTime: "WHAT"}.HasArrived()).To(BeFalse())
+		})
+	})
+	Describe("IsArriving", func() {
+		It("works", func() {
+			Expect(martaapi.Schedule{WaitingTime: "ArrIVIng"}.IsArriving()).To(BeTrue())
+			Expect(martaapi.Schedule{WaitingTime: "arrIVED"}.IsArriving()).To(BeFalse())
+			Expect(martaapi.Schedule{WaitingTime: "boarDING"}.IsArriving()).To(BeFalse())
+			Expect(martaapi.Schedule{WaitingTime: "WHAT"}.IsArriving()).To(BeFalse())
 		})
 	})
 	Describe("String", func() {

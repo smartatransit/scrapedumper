@@ -198,6 +198,12 @@ var _ = Describe("BuildDumper", func() {
 
 					//we're also expecting a second query, to create the index
 					smock.ExpectExec(".*").WillReturnResult(sqlmock.NewResult(0, 0))
+					smock.ExpectExec(".*").WillReturnResult(sqlmock.NewResult(0, 0))
+					smock.ExpectExec(".*").WillReturnResult(sqlmock.NewResult(0, 0))
+					smock.ExpectExec(".*").WillReturnResult(sqlmock.NewResult(0, 0))
+					smock.ExpectExec(".*").WillReturnResult(sqlmock.NewResult(0, 0))
+					smock.ExpectExec(".*").WillReturnResult(sqlmock.NewResult(0, 0))
+					smock.ExpectExec(".*").WillReturnResult(sqlmock.NewResult(0, 0))
 				})
 				It("produces a PostgresDumpHandler", func() {
 					Expect(callErr).To(BeNil())
