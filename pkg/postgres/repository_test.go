@@ -532,4 +532,88 @@ WHERE identifier = \$2`).
 			})
 		})
 	})
+
+	Describe("DeleteStaleRuns", func() {
+		var (
+			callErr error
+
+			begin         *sqlmock.ExpectedBegin
+			estimatesExec *sqlmock.ExpectedExec
+			arrivalsExec  *sqlmock.ExpectedExec
+			runsExec      *sqlmock.ExpectedExec
+		)
+		BeforeEach(func() {
+			begin = smock.ExpectBegin()
+
+			estimatesExec = smock.ExpectExec(`
+DELETE FROM estimates
+USING runs WHERE runs.identifier = estimates.run_identifier
+WHERE runs.most_recent_event_moment < \$1`).
+				WithArgs(
+					easternDate(2019, time.August, 5, 22, 15, 16, 0),
+				)
+			estimatesExec.WillReturnResult(sqlmock.NewResult(0, 1))
+
+			arrivalsExec = smock.ExpectExec(`
+DELETE FROM arrivals
+USING runs WHERE runs.identifier = arrivals.run_identifier
+WHERE runs.most_recent_event_moment < \$1`).
+				WithArgs(
+					easternDate(2019, time.August, 5, 22, 15, 16, 0),
+				)
+			arrivalsExec.WillReturnResult(sqlmock.NewResult(0, 1))
+
+			runsExec = smock.ExpectExec(`
+DELETE FROM runs
+WHERE most_recent_event_moment < \$1`).
+				WithArgs(
+					easternDate(2019, time.August, 5, 22, 15, 16, 0),
+				)
+			runsExec.WillReturnResult(sqlmock.NewResult(0, 1))
+		})
+		JustBeforeEach(func() {
+			callErr = repo.DeleteStaleRuns(easternDate(2019, time.August, 5, 22, 15, 16, 0))
+		})
+		When("beginning the transaction fails", func() {
+			BeforeEach(func() {
+				begin.WillReturnError(errors.New("begin failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to begin transaction to delete stale runs: begin failed"))
+			})
+		})
+		When("the update fails", func() {
+			BeforeEach(func() {
+				estimatesExec.WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to drop estimates for stale runs: exec failed"))
+			})
+		})
+		When("the update fails", func() {
+			BeforeEach(func() {
+				arrivalsExec.WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to drop arrivals for stale runs: exec failed"))
+			})
+		})
+		When("the update fails", func() {
+			BeforeEach(func() {
+				runsExec.WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to drop stale runs: exec failed"))
+			})
+		})
+		When("committing the transaction fails", func() {
+			BeforeEach(func() {
+				smock.ExpectCommit().WillReturnError(errors.New("commit failed"))
+			})
+			It("succeeds", func() {
+				Expect(callErr).To(MatchError("failed to commit transaction when dropping stale runs: commit failed"))
+				Expect(smock.ExpectationsWereMet()).To(BeNil())
+			})
+		})
+	})
 })

@@ -19,6 +19,8 @@ type Repository interface {
 	EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station) (err error)
 	AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error)
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
+
+	DeleteStaleRuns(threshold EasternTime) (err error)
 }
 
 //NewRepository creates a new postgres respotitory
@@ -255,6 +257,52 @@ WHERE arrivals.identifier = $2
 	}
 
 	err = errors.Wrapf(tx.Commit(), "failed to commit transaction when setting arrival time for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.String(), station)
+	return
+}
+
+func (a *RepositoryAgent) DeleteStaleRuns(threshold EasternTime) (err error) {
+	tx, err := a.DB.Begin()
+	if err != nil {
+		err = errors.Wrap(err, "failed to begin transaction to delete stale runs")
+		return
+	}
+
+	_, err = a.DB.Exec(`
+DELETE FROM estimates
+USING runs WHERE runs.identifier = estimates.run_identifier
+WHERE runs.most_recent_event_moment < $1`,
+		threshold,
+	)
+	if err != nil {
+		// rollback(tx, a.Logger)
+		err = errors.Wrap(err, "failed to drop estimates for stale runs")
+		return
+	}
+
+	_, err = a.DB.Exec(`
+DELETE FROM arrivals
+USING runs WHERE runs.identifier = arrivals.run_identifier
+WHERE runs.most_recent_event_moment < $1`,
+		threshold,
+	)
+	if err != nil {
+		// rollback(tx, a.Logger)
+		err = errors.Wrap(err, "failed to drop arrivals for stale runs")
+		return
+	}
+
+	_, err = a.DB.Exec(`
+DELETE FROM runs
+WHERE most_recent_event_moment < $1`,
+		threshold,
+	)
+	if err != nil {
+		// rollback(tx, a.Logger)
+		err = errors.Wrap(err, "failed to drop stale runs")
+		return
+	}
+
+	err = errors.Wrapf(tx.Commit(), "failed to commit transaction when dropping stale runs")
 	return
 }
 

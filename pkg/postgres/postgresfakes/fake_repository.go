@@ -40,6 +40,17 @@ type FakeRepository struct {
 	createRunRecordReturnsOnCall map[int]struct {
 		result1 error
 	}
+	DeleteStaleRunsStub        func(postgres.EasternTime) error
+	deleteStaleRunsMutex       sync.RWMutex
+	deleteStaleRunsArgsForCall []struct {
+		arg1 postgres.EasternTime
+	}
+	deleteStaleRunsReturns struct {
+		result1 error
+	}
+	deleteStaleRunsReturnsOnCall map[int]struct {
+		result1 error
+	}
 	EnsureArrivalRecordStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station) error
 	ensureArrivalRecordMutex       sync.RWMutex
 	ensureArrivalRecordArgsForCall []struct {
@@ -229,6 +240,66 @@ func (fake *FakeRepository) CreateRunRecordReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.createRunRecordReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepository) DeleteStaleRuns(arg1 postgres.EasternTime) error {
+	fake.deleteStaleRunsMutex.Lock()
+	ret, specificReturn := fake.deleteStaleRunsReturnsOnCall[len(fake.deleteStaleRunsArgsForCall)]
+	fake.deleteStaleRunsArgsForCall = append(fake.deleteStaleRunsArgsForCall, struct {
+		arg1 postgres.EasternTime
+	}{arg1})
+	fake.recordInvocation("DeleteStaleRuns", []interface{}{arg1})
+	fake.deleteStaleRunsMutex.Unlock()
+	if fake.DeleteStaleRunsStub != nil {
+		return fake.DeleteStaleRunsStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.deleteStaleRunsReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeRepository) DeleteStaleRunsCallCount() int {
+	fake.deleteStaleRunsMutex.RLock()
+	defer fake.deleteStaleRunsMutex.RUnlock()
+	return len(fake.deleteStaleRunsArgsForCall)
+}
+
+func (fake *FakeRepository) DeleteStaleRunsCalls(stub func(postgres.EasternTime) error) {
+	fake.deleteStaleRunsMutex.Lock()
+	defer fake.deleteStaleRunsMutex.Unlock()
+	fake.DeleteStaleRunsStub = stub
+}
+
+func (fake *FakeRepository) DeleteStaleRunsArgsForCall(i int) postgres.EasternTime {
+	fake.deleteStaleRunsMutex.RLock()
+	defer fake.deleteStaleRunsMutex.RUnlock()
+	argsForCall := fake.deleteStaleRunsArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeRepository) DeleteStaleRunsReturns(result1 error) {
+	fake.deleteStaleRunsMutex.Lock()
+	defer fake.deleteStaleRunsMutex.Unlock()
+	fake.DeleteStaleRunsStub = nil
+	fake.deleteStaleRunsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRepository) DeleteStaleRunsReturnsOnCall(i int, result1 error) {
+	fake.deleteStaleRunsMutex.Lock()
+	defer fake.deleteStaleRunsMutex.Unlock()
+	fake.DeleteStaleRunsStub = nil
+	if fake.deleteStaleRunsReturnsOnCall == nil {
+		fake.deleteStaleRunsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.deleteStaleRunsReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -491,6 +562,8 @@ func (fake *FakeRepository) Invocations() map[string][][]interface{} {
 	defer fake.addArrivalEstimateMutex.RUnlock()
 	fake.createRunRecordMutex.RLock()
 	defer fake.createRunRecordMutex.RUnlock()
+	fake.deleteStaleRunsMutex.RLock()
+	defer fake.deleteStaleRunsMutex.RUnlock()
 	fake.ensureArrivalRecordMutex.RLock()
 	defer fake.ensureArrivalRecordMutex.RUnlock()
 	fake.ensureTablesMutex.RLock()
