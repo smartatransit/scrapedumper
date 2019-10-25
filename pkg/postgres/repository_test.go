@@ -553,8 +553,9 @@ WHERE identifier = \$2`).
 
 			estimatesExec = smock.ExpectExec(`
 DELETE FROM estimates
-USING runs WHERE runs.identifier = estimates.run_identifier
-WHERE runs.most_recent_event_moment < \$1`).
+USING runs
+WHERE runs.identifier = estimates.run_identifier
+	AND runs.most_recent_event_moment < \$1`).
 				WithArgs(
 					easternDate(2019, time.August, 5, 22, 15, 16, 0),
 				)
@@ -562,8 +563,9 @@ WHERE runs.most_recent_event_moment < \$1`).
 
 			arrivalsExec = smock.ExpectExec(`
 DELETE FROM arrivals
-USING runs WHERE runs.identifier = arrivals.run_identifier
-WHERE runs.most_recent_event_moment < \$1`).
+USING runs
+WHERE runs.identifier = arrivals.run_identifier
+	AND runs.most_recent_event_moment < \$1`).
 				WithArgs(
 					easternDate(2019, time.August, 5, 22, 15, 16, 0),
 				)

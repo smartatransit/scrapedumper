@@ -273,24 +273,26 @@ func (a *RepositoryAgent) DeleteStaleRuns(threshold EasternTime) (err error) {
 
 	_, err = a.DB.Exec(`
 DELETE FROM estimates
-USING runs WHERE runs.identifier = estimates.run_identifier
-WHERE runs.most_recent_event_moment < $1`,
+USING runs
+WHERE runs.identifier = estimates.run_identifier
+	AND runs.most_recent_event_moment < $1`,
 		threshold,
 	)
 	if err != nil {
-		// rollback(tx, a.Logger)
+		rollback(tx, a.Logger)
 		err = errors.Wrap(err, "failed to drop estimates for stale runs")
 		return
 	}
 
 	_, err = a.DB.Exec(`
 DELETE FROM arrivals
-USING runs WHERE runs.identifier = arrivals.run_identifier
-WHERE runs.most_recent_event_moment < $1`,
+USING runs
+WHERE runs.identifier = arrivals.run_identifier
+	AND runs.most_recent_event_moment < $1`,
 		threshold,
 	)
 	if err != nil {
-		// rollback(tx, a.Logger)
+		rollback(tx, a.Logger)
 		err = errors.Wrap(err, "failed to drop arrivals for stale runs")
 		return
 	}
@@ -301,7 +303,7 @@ WHERE most_recent_event_moment < $1`,
 		threshold,
 	)
 	if err != nil {
-		// rollback(tx, a.Logger)
+		rollback(tx, a.Logger)
 		err = errors.Wrap(err, "failed to drop stale runs")
 		return
 	}
