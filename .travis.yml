@@ -29,14 +29,14 @@ script:
   - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo "staging" ; fi`
 
   - GOOS=linux go build
-  - export DOCKER_REPO=smartatransit/scrapedumper
-  - export DOCKER_BUILD_DIRECTORY=.
+  - export docker_repo=smartatransit/scrapedumper
+  - export docker_build_directory=.
   - export tags="build-${TRAVIS_BUILD_NUMBER},commit-${TRAVIS_COMMIT::8},$TAG"
   - ./build_and_push_image.sh
 
   - GOOS=linux go build ./postgres-reaper/ -o ./postgres-reaper/postgres-reaper
-  - export DOCKER_REPO=smartatransit/scrapereaper
-  - export DOCKER_BUILD_DIRECTORY=./postgres-reaper/
+  - export docker_repo=smartatransit/scrapereaper
+  - export docker_build_directory=./postgres-reaper/
   - export tags="build-${TRAVIS_BUILD_NUMBER},commit-${TRAVIS_COMMIT::8},$TAG"
   - ./build_and_push_image.sh
 
