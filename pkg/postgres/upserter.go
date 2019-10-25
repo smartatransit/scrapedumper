@@ -65,14 +65,36 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 		goEventTime,
 		a.runLifetime,
 	) {
-		// panic(nil)
 		runFirstEventMoment = eventTime
+
+		//
+		//
+		//
+		// TODO: the entire paradigm of dumpers that handle a single
+		//   martaapi.Schedule needs to change - ClassifySequenceList
+		//   needs to see the whole picture.
+		//
+		// Idea: change the dumper interface to accept a []martaapi.Schedule
+		//   then create a ScheduleDumper that only uses martaapi.Schedule,
+		//   and a new Dumper implementation that naively uses a ScheduleDumper
+		//
+		//
+		//
+
+		stationSeq := make([]martaapi.Station, len(rec))
+		correctedLine, correctedDirection := martaapi.ClassifySequenceList(
+			nil, //TODO
+			martaapi.Line(rec.Line),
+			martaapi.Direction(rec.Direction),
+		)
 
 		if err = a.repo.CreateRunRecord(
 			martaapi.Direction(rec.Direction),
 			martaapi.Line(rec.Line),
 			rec.TrainID,
 			runFirstEventMoment,
+			correctedLine,
+			correctedDirection,
 		); err != nil {
 			err = errors.Wrapf(err, "failed to create run record for `%s`", rec.String())
 			return

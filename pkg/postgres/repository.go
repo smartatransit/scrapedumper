@@ -15,7 +15,7 @@ type Repository interface {
 	EnsureTables() error
 
 	GetLatestRunStartMomentFor(dir martaapi.Direction, line martaapi.Line, trainID string, asOfMoment EasternTime) (runFirstEventMoment EasternTime, mostRecentEventTime EasternTime, err error)
-	CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime) (err error)
+	CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction) (err error)
 	EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station) (err error)
 	AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error)
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
@@ -64,8 +64,10 @@ func RunGroupIdentifierFor(dir martaapi.Direction, line martaapi.Line, trainID s
 func (a *RepositoryAgent) EnsureTables() error {
 	_, err := a.DB.Exec(`
 CREATE TABLE IF NOT EXISTS runs
-(	identifier text,
-	run_group_identifier text NOT NULL,
+(	identifier varchar,
+	run_group_identifier varchar NOT NULL,
+	corrected_line varchar NOT NULL,
+	corrected_direction varchar NOT NULL,
 	most_recent_event_moment varchar NOT NULL,
 	run_first_event_moment varchar NOT NULL,
 	PRIMARY KEY (identifier)
@@ -76,9 +78,9 @@ CREATE TABLE IF NOT EXISTS runs
 
 	_, err = a.DB.Exec(`
 CREATE TABLE IF NOT EXISTS arrivals
-(	identifier text,
-	run_identifier text NOT NULL,
-	station text NOT NULL,
+(	identifier varchar,
+	run_identifier varchar NOT NULL,
+	station varchar NOT NULL,
 	arrival_time varchar,
 	PRIMARY KEY (identifier)
 )`)
@@ -88,9 +90,9 @@ CREATE TABLE IF NOT EXISTS arrivals
 
 	_, err = a.DB.Exec(`
 CREATE TABLE IF NOT EXISTS estimates
-(	identifier text,
-	run_identifier text NOT NULL,
-	arrival_identifier text NOT NULL,
+(	identifier varchar,
+	run_identifier varchar NOT NULL,
+	arrival_identifier varchar NOT NULL,
 	estimate_moment varchar NOT NULL,
 	estimated_arrival_time varchar NOT NULL,
 	PRIMARY KEY (identifier)
@@ -150,15 +152,17 @@ LIMIT 1`,
 }
 
 //CreateRunRecord inserts this run to the run table
-func (a *RepositoryAgent) CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime) (err error) {
+func (a *RepositoryAgent) CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction) (err error) {
 	res, err := a.DB.Exec(`
 INSERT INTO runs
-(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment)
-VALUES ($1, $2, $3, $4)`,
+(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment, corrected_line, corrected_direction)
+VALUES ($1, $2, $3, $4, $5, $6)`,
 		RunIdentifierFor(dir, line, trainID, runFirstEventMoment),
 		RunGroupIdentifierFor(dir, line, trainID),
 		runFirstEventMoment, //most_recent_event_moment
 		runFirstEventMoment,
+		correctedLine,
+		correctedDirection,
 	)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create run for dir `%s` line `%s` train `%s` and first event moment `%s`", dir, line, trainID, runFirstEventMoment)
