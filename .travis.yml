@@ -34,7 +34,7 @@ script:
   - export tags="build-${TRAVIS_BUILD_NUMBER},commit-${TRAVIS_COMMIT::8},$TAG"
   - ./build_and_push_image.sh
 
-  - GOOS=linux go build ./postgres-reaper/ -o ./postgres-reaper/postgres-reaper
+  - GOOS=linux go build -o ./postgres-reaper/postgres-reaper ./postgres-reaper/
   - export docker_repo=smartatransit/scrapereaper
   - export docker_build_directory=./postgres-reaper/
   - export tags="build-${TRAVIS_BUILD_NUMBER},commit-${TRAVIS_COMMIT::8},$TAG"
