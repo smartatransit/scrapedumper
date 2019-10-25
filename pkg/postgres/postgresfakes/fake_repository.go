@@ -26,13 +26,15 @@ type FakeRepository struct {
 	addArrivalEstimateReturnsOnCall map[int]struct {
 		result1 error
 	}
-	CreateRunRecordStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime) error
+	CreateRunRecordStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Line, martaapi.Direction) error
 	createRunRecordMutex       sync.RWMutex
 	createRunRecordArgsForCall []struct {
 		arg1 martaapi.Direction
 		arg2 martaapi.Line
 		arg3 string
 		arg4 postgres.EasternTime
+		arg5 martaapi.Line
+		arg6 martaapi.Direction
 	}
 	createRunRecordReturns struct {
 		result1 error
@@ -181,7 +183,7 @@ func (fake *FakeRepository) AddArrivalEstimateReturnsOnCall(i int, result1 error
 	}{result1}
 }
 
-func (fake *FakeRepository) CreateRunRecord(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string, arg4 postgres.EasternTime) error {
+func (fake *FakeRepository) CreateRunRecord(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string, arg4 postgres.EasternTime, arg5 martaapi.Line, arg6 martaapi.Direction) error {
 	fake.createRunRecordMutex.Lock()
 	ret, specificReturn := fake.createRunRecordReturnsOnCall[len(fake.createRunRecordArgsForCall)]
 	fake.createRunRecordArgsForCall = append(fake.createRunRecordArgsForCall, struct {
@@ -189,11 +191,13 @@ func (fake *FakeRepository) CreateRunRecord(arg1 martaapi.Direction, arg2 martaa
 		arg2 martaapi.Line
 		arg3 string
 		arg4 postgres.EasternTime
-	}{arg1, arg2, arg3, arg4})
-	fake.recordInvocation("CreateRunRecord", []interface{}{arg1, arg2, arg3, arg4})
+		arg5 martaapi.Line
+		arg6 martaapi.Direction
+	}{arg1, arg2, arg3, arg4, arg5, arg6})
+	fake.recordInvocation("CreateRunRecord", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6})
 	fake.createRunRecordMutex.Unlock()
 	if fake.CreateRunRecordStub != nil {
-		return fake.CreateRunRecordStub(arg1, arg2, arg3, arg4)
+		return fake.CreateRunRecordStub(arg1, arg2, arg3, arg4, arg5, arg6)
 	}
 	if specificReturn {
 		return ret.result1
@@ -208,17 +212,17 @@ func (fake *FakeRepository) CreateRunRecordCallCount() int {
 	return len(fake.createRunRecordArgsForCall)
 }
 
-func (fake *FakeRepository) CreateRunRecordCalls(stub func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime) error) {
+func (fake *FakeRepository) CreateRunRecordCalls(stub func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Line, martaapi.Direction) error) {
 	fake.createRunRecordMutex.Lock()
 	defer fake.createRunRecordMutex.Unlock()
 	fake.CreateRunRecordStub = stub
 }
 
-func (fake *FakeRepository) CreateRunRecordArgsForCall(i int) (martaapi.Direction, martaapi.Line, string, postgres.EasternTime) {
+func (fake *FakeRepository) CreateRunRecordArgsForCall(i int) (martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Line, martaapi.Direction) {
 	fake.createRunRecordMutex.RLock()
 	defer fake.createRunRecordMutex.RUnlock()
 	argsForCall := fake.createRunRecordArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6
 }
 
 func (fake *FakeRepository) CreateRunRecordReturns(result1 error) {

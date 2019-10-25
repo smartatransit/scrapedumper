@@ -50,7 +50,7 @@ var _ = Describe("Upserter", func() {
 			)
 		})
 		JustBeforeEach(func() {
-			callErr = upserter.AddRecordToDatabase(rec)
+			callErr = upserter.AddRecordToDatabase([]martaapi.Schedule{rec}, 0)
 		})
 		When("the eventTime is malformed", func() {
 			BeforeEach(func() {
@@ -83,7 +83,7 @@ var _ = Describe("Upserter", func() {
 				It("fails", func() {
 					Expect(callErr).To(MatchError("failed to create run record for `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: create run failed"))
 
-					_, _, _, runStartMoment := repo.CreateRunRecordArgsForCall(0)
+					_, _, _, runStartMoment, _, _ := repo.CreateRunRecordArgsForCall(0)
 					Expect(runStartMoment).To(Equal(easternDate(2019, time.June, 18, 21, 41, 2, 0)))
 				})
 			})

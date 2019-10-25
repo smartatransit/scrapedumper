@@ -43,8 +43,10 @@ var _ = Describe("Repository", func() {
 		var expectRunsTableExec = func() *sqlmock.ExpectedExec {
 			return smock.ExpectExec(`
 CREATE TABLE IF NOT EXISTS runs
-\(	identifier text,
-	run_group_identifier text NOT NULL,
+\(	identifier varchar,
+	run_group_identifier varchar NOT NULL,
+	corrected_line varchar NOT NULL,
+	corrected_direction varchar NOT NULL,
 	most_recent_event_moment varchar NOT NULL,
 	run_first_event_moment varchar NOT NULL,
 	PRIMARY KEY \(identifier\)
@@ -53,9 +55,9 @@ CREATE TABLE IF NOT EXISTS runs
 		var expectArrivalsTableExec = func() *sqlmock.ExpectedExec {
 			return smock.ExpectExec(`
 CREATE TABLE IF NOT EXISTS arrivals
-\(	identifier text,
-	run_identifier text NOT NULL,
-	station text NOT NULL,
+\(	identifier varchar,
+	run_identifier varchar NOT NULL,
+	station varchar NOT NULL,
 	arrival_time varchar,
 	PRIMARY KEY \(identifier\)
 \)`)
@@ -63,9 +65,9 @@ CREATE TABLE IF NOT EXISTS arrivals
 		var expectEstimatesTableExec = func() *sqlmock.ExpectedExec {
 			return smock.ExpectExec(`
 CREATE TABLE IF NOT EXISTS estimates
-\(	identifier text,
-	run_identifier text NOT NULL,
-	arrival_identifier text NOT NULL,
+\(	identifier varchar,
+	run_identifier varchar NOT NULL,
+	arrival_identifier varchar NOT NULL,
 	estimate_moment varchar NOT NULL,
 	estimated_arrival_time varchar NOT NULL,
 	PRIMARY KEY \(identifier\)
@@ -268,13 +270,15 @@ LIMIT 1`).
 		BeforeEach(func() {
 			exec = smock.ExpectExec(`
 INSERT INTO runs
-\(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment\)
-VALUES \(\$1, \$2, \$3, \$4\)`).
+\(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment, corrected_line, corrected_direction\)
+VALUES \(\$1, \$2, \$3, \$4, \$5, \$6\)`).
 				WithArgs(
 					"N_GOLD_193230_2019-08-05T18:15:16-04:00",
 					"N_GOLD_193230",
 					easternDate(2019, time.August, 5, 18, 15, 16, 0),
 					easternDate(2019, time.August, 5, 18, 15, 16, 0),
+					"RED",
+					"S",
 				)
 			exec.WillReturnResult(sqlmock.NewResult(0, 1))
 		})
@@ -284,6 +288,8 @@ VALUES \(\$1, \$2, \$3, \$4\)`).
 				martaapi.Line("GOLD"),
 				"193230",
 				easternDate(2019, time.August, 5, 18, 15, 16, 0),
+				martaapi.Line("RED"),
+				martaapi.Direction("S"),
 			)
 		})
 		When("the query fails", func() {

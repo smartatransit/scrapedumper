@@ -11,7 +11,7 @@ import (
 //reconcile separate records from the same train run
 //go:generate counterfeiter . Upserter
 type Upserter interface {
-	AddRecordToDatabase(martaapi.Schedule) error
+	AddRecordToDatabase(recs []martaapi.Schedule, i int) (err error)
 }
 
 //NewUpserter creates a new postgres upserter
@@ -43,7 +43,9 @@ func newRunRequired(
 
 //AddRecordToDatabase upserts a record to the database, while
 //attempting to reconcile separate records from the same train run
-func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
+func (a *UpserterAgent) AddRecordToDatabase(recs []martaapi.Schedule, i int) (err error) {
+	rec := recs[i]
+
 	goEventTime, err := time.ParseInLocation(martaapi.MartaAPIDatetimeFormat, rec.EventTime, EasternTimeZone)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to parse record event time `%s`", rec.EventTime)
@@ -67,23 +69,12 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 	) {
 		runFirstEventMoment = eventTime
 
-		//
-		//
-		//
-		// TODO: the entire paradigm of dumpers that handle a single
-		//   martaapi.Schedule needs to change - ClassifySequenceList
-		//   needs to see the whole picture.
-		//
-		// Idea: change the dumper interface to accept a []martaapi.Schedule
-		//   then create a ScheduleDumper that only uses martaapi.Schedule,
-		//   and a new Dumper implementation that naively uses a ScheduleDumper
-		//
-		//
-		//
-
-		stationSeq := make([]martaapi.Station, len(rec))
+		stationSeq := make([]martaapi.Station, len(recs))
+		for i := range recs {
+			stationSeq[i] = martaapi.Station(recs[i].Station)
+		}
 		correctedLine, correctedDirection := martaapi.ClassifySequenceList(
-			nil, //TODO
+			stationSeq,
 			martaapi.Line(rec.Line),
 			martaapi.Direction(rec.Direction),
 		)
