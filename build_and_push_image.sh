@@ -1,4 +1,4 @@
-docker build . -t $DOCKER_REPO:local
+docker build $DOCKER_BUILD_DIRECTORY -t $DOCKER_REPO:local
 
 for tag in ${tags//,/ }
 do

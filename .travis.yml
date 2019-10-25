@@ -23,17 +23,20 @@ before_script:
 
   - golangci-lint run --config=.golangci-lint.yaml # run a bunch of code checkers/linters in parallel
   - ginkgo -r --randomizeAllSpecs --randomizeSuites --failOnPending --cover --trace --race --progress
-  - GOOS=linux go build # target the container environment
 
 script:
   - docker login -u $DOCKER_USER -p $DOCKER_PASS
   - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo "staging" ; fi`
 
+  - GOOS=linux go build
   - export DOCKER_REPO=smartatransit/scrapedumper
+  - export DOCKER_BUILD_DIRECTORY=.
   - export tags="build-${TRAVIS_BUILD_NUMBER},commit-${TRAVIS_COMMIT::8},$TAG"
   - ./build_and_push_image.sh
 
+  - GOOS=linux go build ./postgres-reaper/ -o ./postgres-reaper/postgres-reaper
   - export DOCKER_REPO=smartatransit/scrapereaper
+  - export DOCKER_BUILD_DIRECTORY=./postgres-reaper/
   - export tags="build-${TRAVIS_BUILD_NUMBER},commit-${TRAVIS_COMMIT::8},$TAG"
   - ./build_and_push_image.sh
 
