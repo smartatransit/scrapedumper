@@ -16,9 +16,8 @@ import (
 )
 
 type options struct {
-	DataLocation             string `long:"data-location" env:"DATA_LOCATION" description:"local path to from which to collect JSON files" required:"true"`
-	PostgresConnectionString string `long:"postgres-connection-string" env:"POSTGRES_CONNECTION_STRING" required:"true"`
-	RunTTLSeconds            int    `long:"run-ttl-seconds" env:"RUN_TTL_SECONDS"`
+	PostgresConnectionString string    `long:"postgres-connection-string" env:"POSTGRES_CONNECTION_STRING" required:"true"`
+	RunThreshold             time.Time `long:"run-threshold-rfc3339" env:"RUN_THRESHOLD_RFC3339" description:"The moment before which we should delete any runs. Formatted as an RFC3339 timestamp."`
 }
 
 func main() {
@@ -46,8 +45,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	threshold := time.Now().Add(-time.Second * time.Duration(opts.RunTTLSeconds))
-	if err := repo.DeleteStaleRuns(postgres.EasternTime(threshold)); err != nil {
+	if err := repo.DeleteStaleRuns(postgres.EasternTime(opts.RunThreshold)); err != nil {
 		log.Fatal(err)
 	}
 
