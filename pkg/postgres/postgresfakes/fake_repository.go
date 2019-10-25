@@ -42,16 +42,22 @@ type FakeRepository struct {
 	createRunRecordReturnsOnCall map[int]struct {
 		result1 error
 	}
-	DeleteStaleRunsStub        func(postgres.EasternTime) error
+	DeleteStaleRunsStub        func(postgres.EasternTime) (int64, int64, int64, error)
 	deleteStaleRunsMutex       sync.RWMutex
 	deleteStaleRunsArgsForCall []struct {
 		arg1 postgres.EasternTime
 	}
 	deleteStaleRunsReturns struct {
-		result1 error
+		result1 int64
+		result2 int64
+		result3 int64
+		result4 error
 	}
 	deleteStaleRunsReturnsOnCall map[int]struct {
-		result1 error
+		result1 int64
+		result2 int64
+		result3 int64
+		result4 error
 	}
 	EnsureArrivalRecordStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station) error
 	ensureArrivalRecordMutex       sync.RWMutex
@@ -248,7 +254,7 @@ func (fake *FakeRepository) CreateRunRecordReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeRepository) DeleteStaleRuns(arg1 postgres.EasternTime) error {
+func (fake *FakeRepository) DeleteStaleRuns(arg1 postgres.EasternTime) (int64, int64, int64, error) {
 	fake.deleteStaleRunsMutex.Lock()
 	ret, specificReturn := fake.deleteStaleRunsReturnsOnCall[len(fake.deleteStaleRunsArgsForCall)]
 	fake.deleteStaleRunsArgsForCall = append(fake.deleteStaleRunsArgsForCall, struct {
@@ -260,10 +266,10 @@ func (fake *FakeRepository) DeleteStaleRuns(arg1 postgres.EasternTime) error {
 		return fake.DeleteStaleRunsStub(arg1)
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2, ret.result3, ret.result4
 	}
 	fakeReturns := fake.deleteStaleRunsReturns
-	return fakeReturns.result1
+	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3, fakeReturns.result4
 }
 
 func (fake *FakeRepository) DeleteStaleRunsCallCount() int {
@@ -272,7 +278,7 @@ func (fake *FakeRepository) DeleteStaleRunsCallCount() int {
 	return len(fake.deleteStaleRunsArgsForCall)
 }
 
-func (fake *FakeRepository) DeleteStaleRunsCalls(stub func(postgres.EasternTime) error) {
+func (fake *FakeRepository) DeleteStaleRunsCalls(stub func(postgres.EasternTime) (int64, int64, int64, error)) {
 	fake.deleteStaleRunsMutex.Lock()
 	defer fake.deleteStaleRunsMutex.Unlock()
 	fake.DeleteStaleRunsStub = stub
@@ -285,27 +291,36 @@ func (fake *FakeRepository) DeleteStaleRunsArgsForCall(i int) postgres.EasternTi
 	return argsForCall.arg1
 }
 
-func (fake *FakeRepository) DeleteStaleRunsReturns(result1 error) {
+func (fake *FakeRepository) DeleteStaleRunsReturns(result1 int64, result2 int64, result3 int64, result4 error) {
 	fake.deleteStaleRunsMutex.Lock()
 	defer fake.deleteStaleRunsMutex.Unlock()
 	fake.DeleteStaleRunsStub = nil
 	fake.deleteStaleRunsReturns = struct {
-		result1 error
-	}{result1}
+		result1 int64
+		result2 int64
+		result3 int64
+		result4 error
+	}{result1, result2, result3, result4}
 }
 
-func (fake *FakeRepository) DeleteStaleRunsReturnsOnCall(i int, result1 error) {
+func (fake *FakeRepository) DeleteStaleRunsReturnsOnCall(i int, result1 int64, result2 int64, result3 int64, result4 error) {
 	fake.deleteStaleRunsMutex.Lock()
 	defer fake.deleteStaleRunsMutex.Unlock()
 	fake.DeleteStaleRunsStub = nil
 	if fake.deleteStaleRunsReturnsOnCall == nil {
 		fake.deleteStaleRunsReturnsOnCall = make(map[int]struct {
-			result1 error
+			result1 int64
+			result2 int64
+			result3 int64
+			result4 error
 		})
 	}
 	fake.deleteStaleRunsReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
+		result1 int64
+		result2 int64
+		result3 int64
+		result4 error
+	}{result1, result2, result3, result4}
 }
 
 func (fake *FakeRepository) EnsureArrivalRecord(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string, arg4 postgres.EasternTime, arg5 martaapi.Station) error {

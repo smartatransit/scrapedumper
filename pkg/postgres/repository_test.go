@@ -580,7 +580,7 @@ WHERE most_recent_event_moment < \$1`).
 			runsExec.WillReturnResult(sqlmock.NewResult(0, 1))
 		})
 		JustBeforeEach(func() {
-			callErr = repo.DeleteStaleRuns(easternDate(2019, time.August, 5, 22, 15, 16, 0))
+			_, _, _, callErr = repo.DeleteStaleRuns(easternDate(2019, time.August, 5, 22, 15, 16, 0))
 		})
 		When("beginning the transaction fails", func() {
 			BeforeEach(func() {
@@ -590,7 +590,7 @@ WHERE most_recent_event_moment < \$1`).
 				Expect(callErr).To(MatchError("failed to begin transaction to delete stale runs: begin failed"))
 			})
 		})
-		When("the update fails", func() {
+		When("dropping estimates fails", func() {
 			BeforeEach(func() {
 				estimatesExec.WillReturnError(errors.New("exec failed"))
 			})
@@ -598,7 +598,15 @@ WHERE most_recent_event_moment < \$1`).
 				Expect(callErr).To(MatchError("failed to drop estimates for stale runs: exec failed"))
 			})
 		})
-		When("the update fails", func() {
+		When("dropping estimates returns a malformed result", func() {
+			BeforeEach(func() {
+				estimatesExec.WillReturnResult(sqlmock.NewErrorResult(errors.New("couldn't get rows affected")))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("received malformed result when dropping stale estimates: couldn't get rows affected"))
+			})
+		})
+		When("dropping arrivals fails", func() {
 			BeforeEach(func() {
 				arrivalsExec.WillReturnError(errors.New("exec failed"))
 			})
@@ -606,12 +614,28 @@ WHERE most_recent_event_moment < \$1`).
 				Expect(callErr).To(MatchError("failed to drop arrivals for stale runs: exec failed"))
 			})
 		})
-		When("the update fails", func() {
+		When("dropping arrivals returns a malformed result", func() {
+			BeforeEach(func() {
+				arrivalsExec.WillReturnResult(sqlmock.NewErrorResult(errors.New("couldn't get rows affected")))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("received malformed result when dropping stale arrivals: couldn't get rows affected"))
+			})
+		})
+		When("dropping runs fails", func() {
 			BeforeEach(func() {
 				runsExec.WillReturnError(errors.New("exec failed"))
 			})
 			It("fails", func() {
 				Expect(callErr).To(MatchError("failed to drop stale runs: exec failed"))
+			})
+		})
+		When("dropping runs returns a malformed result", func() {
+			BeforeEach(func() {
+				runsExec.WillReturnResult(sqlmock.NewErrorResult(errors.New("couldn't get rows affected")))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("received malformed result when dropping stale runs: couldn't get rows affected"))
 			})
 		})
 		When("committing the transaction fails", func() {

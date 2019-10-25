@@ -20,7 +20,7 @@ type Repository interface {
 	AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error)
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
 
-	DeleteStaleRuns(threshold EasternTime) (err error)
+	DeleteStaleRuns(threshold EasternTime) (estimatesDropped int64, arrivalsDropped int64, runsDropped int64, err error)
 }
 
 //NewRepository creates a new postgres respotitory
@@ -264,14 +264,14 @@ WHERE arrivals.identifier = $2
 	return
 }
 
-func (a *RepositoryAgent) DeleteStaleRuns(threshold EasternTime) (err error) {
+func (a *RepositoryAgent) DeleteStaleRuns(threshold EasternTime) (estimatesDropped int64, arrivalsDropped int64, runsDropped int64, err error) {
 	tx, err := a.DB.Begin()
 	if err != nil {
 		err = errors.Wrap(err, "failed to begin transaction to delete stale runs")
 		return
 	}
 
-	_, err = a.DB.Exec(`
+	res, err := a.DB.Exec(`
 DELETE FROM estimates
 USING runs
 WHERE runs.identifier = estimates.run_identifier
@@ -283,8 +283,13 @@ WHERE runs.identifier = estimates.run_identifier
 		err = errors.Wrap(err, "failed to drop estimates for stale runs")
 		return
 	}
+	if estimatesDropped, err = res.RowsAffected(); err != nil {
+		rollback(tx, a.Logger)
+		err = errors.Wrap(err, "received malformed result when dropping stale estimates")
+		return
+	}
 
-	_, err = a.DB.Exec(`
+	res, err = a.DB.Exec(`
 DELETE FROM arrivals
 USING runs
 WHERE runs.identifier = arrivals.run_identifier
@@ -296,8 +301,13 @@ WHERE runs.identifier = arrivals.run_identifier
 		err = errors.Wrap(err, "failed to drop arrivals for stale runs")
 		return
 	}
+	if arrivalsDropped, err = res.RowsAffected(); err != nil {
+		rollback(tx, a.Logger)
+		err = errors.Wrap(err, "received malformed result when dropping stale arrivals")
+		return
+	}
 
-	_, err = a.DB.Exec(`
+	res, err = a.DB.Exec(`
 DELETE FROM runs
 WHERE most_recent_event_moment < $1`,
 		threshold,
@@ -305,6 +315,11 @@ WHERE most_recent_event_moment < $1`,
 	if err != nil {
 		rollback(tx, a.Logger)
 		err = errors.Wrap(err, "failed to drop stale runs")
+		return
+	}
+	if runsDropped, err = res.RowsAffected(); err != nil {
+		rollback(tx, a.Logger)
+		err = errors.Wrap(err, "received malformed result when dropping stale runs")
 		return
 	}
 

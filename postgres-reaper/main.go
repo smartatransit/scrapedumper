@@ -21,7 +21,7 @@ type options struct {
 }
 
 func main() {
-	fmt.Println("Starting postgres loader")
+	fmt.Println("Starting postgres run reaper")
 	var opts options
 	_, err := flags.Parse(&opts)
 	if err != nil {
@@ -45,9 +45,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := repo.DeleteStaleRuns(postgres.EasternTime(opts.RunThreshold)); err != nil {
+	estimatesDropped, arrivalsDropped, runsDropped, err := repo.DeleteStaleRuns(postgres.EasternTime(opts.RunThreshold))
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Success!")
+	fmt.Println("Success:")
+	fmt.Println("Estimates dropped:", estimatesDropped)
+	fmt.Println("Arrivals dropped:", arrivalsDropped)
+	fmt.Println("Runs dropped:", runsDropped)
 }
