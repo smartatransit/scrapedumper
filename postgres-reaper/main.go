@@ -16,8 +16,8 @@ import (
 )
 
 type options struct {
-	PostgresConnectionString string    `long:"postgres-connection-string" env:"POSTGRES_CONNECTION_STRING" required:"true"`
-	RunThreshold             time.Time `long:"run-threshold-rfc3339" env:"RUN_THRESHOLD_RFC3339" description:"The moment before which we should delete any runs. Formatted as an RFC3339 timestamp."`
+	PostgresConnectionString string `long:"postgres-connection-string" env:"POSTGRES_CONNECTION_STRING" required:"true"`
+	RunTTLMinutes            int    `long:"run-ttl-minues" env:"RUN_TTL_MINUTES3339" description:"The TTL of a run in minues."`
 }
 
 func main() {
@@ -45,7 +45,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	estimatesDropped, arrivalsDropped, runsDropped, err := repo.DeleteStaleRuns(postgres.EasternTime(opts.RunThreshold))
+	threshold := time.Now().Add(-time.Minute * time.Duration(opts.RunTTLMinutes))
+	estimatesDropped, arrivalsDropped, runsDropped, err := repo.DeleteStaleRuns(postgres.EasternTime(threshold))
 	if err != nil {
 		log.Fatal(err)
 	}
