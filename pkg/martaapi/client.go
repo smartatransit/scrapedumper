@@ -48,9 +48,13 @@ type Schedule struct {
 
 func (s Schedule) HasArrived() bool {
 	code := strings.ToUpper(s.WaitingTime)
-	return (code == "ARRIVING") ||
-		(code == "ARRIVED") ||
+	return (code == "ARRIVED") ||
 		(code == "BOARDING")
+}
+
+func (s Schedule) IsArriving() bool {
+	code := strings.ToUpper(s.WaitingTime)
+	return (code == "ARRIVING")
 }
 
 func (s Schedule) String() string {

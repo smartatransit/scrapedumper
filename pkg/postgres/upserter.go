@@ -32,13 +32,13 @@ type UpserterAgent struct {
 }
 
 func newRunRequired(
-	runFirstEventMoment time.Time,
-	mostRecentEventMoment time.Time,
+	runFirstEventMoment EasternTime,
+	mostRecentEventMoment EasternTime,
 	eventTime time.Time,
 	runLifetime time.Duration,
 ) bool {
-	return runFirstEventMoment == (time.Time{}) ||
-		mostRecentEventMoment.Before(eventTime.Add(-runLifetime))
+	return time.Time(runFirstEventMoment) == (time.Time{}) ||
+		time.Time(mostRecentEventMoment).Before(eventTime.Add(-runLifetime))
 }
 
 //AddRecordToDatabase upserts a record to the database, while
@@ -49,7 +49,6 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 		err = errors.Wrapf(err, "failed to parse record event time `%s`", rec.EventTime)
 		return
 	}
-
 	eventTime := EasternTime(goEventTime)
 
 	runFirstEventMoment, mostRecentEventMoment, err := a.repo.GetLatestRunStartMomentFor(martaapi.Direction(rec.Direction), martaapi.Line(rec.Line), rec.TrainID, eventTime)
@@ -61,12 +60,23 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 	//if the run didn't match, or if the latest run is stale,
 	//then this is the start of a new run
 	if newRunRequired(
-		time.Time(runFirstEventMoment),
-		time.Time(mostRecentEventMoment),
+		runFirstEventMoment,
+		mostRecentEventMoment,
 		goEventTime,
 		a.runLifetime,
 	) {
+		// panic(nil)
 		runFirstEventMoment = eventTime
+
+		if err = a.repo.CreateRunRecord(
+			martaapi.Direction(rec.Direction),
+			martaapi.Line(rec.Line),
+			rec.TrainID,
+			runFirstEventMoment,
+		); err != nil {
+			err = errors.Wrapf(err, "failed to create run record for `%s`", rec.String())
+			return
+		}
 	}
 
 	if err = a.repo.EnsureArrivalRecord(
@@ -100,6 +110,9 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 			err = errors.Wrapf(err, "failed to set arrival time from record `%s`", rec.String())
 			return
 		}
+	} else if rec.IsArriving() {
+		// we don't have an estimate to add, but we also don't want to set the arrival
+		// time until the state changes again, so for now we ignore the record.
 	} else {
 		var goEstimate time.Time
 		goEstimate, err = time.ParseInLocation(martaapi.MartaAPITimeFormat, rec.NextArrival, EasternTimeZone)
