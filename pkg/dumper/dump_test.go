@@ -167,7 +167,28 @@ var _ = Describe("Dump", func() {
 		BeforeEach(func() {
 			logger = zap.NewNop()
 			upserter = &postgresfakes.FakeUpserter{}
-			r = strings.NewReader("[{},{},{}]")
+			r = strings.NewReader(`[
+				{
+					"DIRECTION": "N",
+					"LINE": "BLUE",
+					"TRAIN_ID": "206401"
+				},
+				{
+					"DIRECTION": "N",
+					"LINE": "BLUE",
+					"TRAIN_ID": "206402"
+				},
+				{
+					"DIRECTION": "N",
+					"LINE": "BLUE",
+					"TRAIN_ID": "206402"
+				},
+				{
+					"DIRECTION": "N",
+					"LINE": "BLUE",
+					"TRAIN_ID": "206401"
+				}
+			]`)
 			err = nil
 		})
 		JustBeforeEach(func() {
@@ -192,13 +213,25 @@ var _ = Describe("Dump", func() {
 			})
 			It("logs and moves on", func() {
 				Expect(err).To(BeNil())
-				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(3))
+				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(4))
 			})
 		})
 		When("all goes well", func() {
 			It("succeeds", func() {
 				Expect(err).To(BeNil())
-				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(3))
+				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(4))
+
+				run, idx := upserter.AddRecordToDatabaseArgsForCall(0)
+				run2, idx2 := upserter.AddRecordToDatabaseArgsForCall(1)
+				Expect(run).To(Equal(run2))
+				Expect(idx).To(Equal(0))
+				Expect(idx2).To(Equal(1))
+
+				run, idx = upserter.AddRecordToDatabaseArgsForCall(0)
+				run2, idx2 = upserter.AddRecordToDatabaseArgsForCall(1)
+				Expect(run).To(Equal(run2))
+				Expect(idx).To(Equal(0))
+				Expect(idx2).To(Equal(1))
 			})
 		})
 	})

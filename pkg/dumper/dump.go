@@ -198,10 +198,19 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 		return err
 	}
 
-	for i := range records {
-		err := c.upserter.AddRecordToDatabase(records, i)
-		if err != nil {
-			c.logger.Error(fmt.Sprintf("failed to upsert MARTA API response to postgres: %s", err.Error()))
+	//group them by run group identifier (line, direction, and trainid)
+	var runs = map[string][]martaapi.Schedule{}
+	for _, rec := range records {
+		rgi := postgres.RunGroupIdentifierFor(martaapi.Direction(rec.Direction), martaapi.Line(rec.Line), rec.TrainID)
+		runs[rgi] = append(runs[rgi], rec)
+	}
+
+	for _, run := range runs {
+		for i := range run {
+			err := c.upserter.AddRecordToDatabase(run, i)
+			if err != nil {
+				c.logger.Error(fmt.Sprintf("failed to upsert MARTA API response to postgres: %s", err.Error()))
+			}
 		}
 	}
 
