@@ -5,3 +5,5 @@ scrapedumper
 postgres-loader/postgres-loader
 postgres-reaper/postgres-reaper
 vendor/
+tmp/
+
