@@ -198,19 +198,47 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 		return err
 	}
 
-	//group them by run group identifier (line, direction, and trainid)
+	//group them by train ID
 	var runs = map[string][]martaapi.Schedule{}
 	for _, rec := range records {
-		rgi := postgres.RunGroupIdentifierFor(martaapi.Direction(rec.Direction), martaapi.Line(rec.Line), rec.TrainID)
-		runs[rgi] = append(runs[rgi], rec)
+		runs[rec.TrainID] = append(runs[rec.TrainID], rec)
 	}
 
-	for _, run := range runs {
+	type correction struct {
+		line martaapi.Line
+		dir  martaapi.Direction
+	}
+	corrections := map[string]correction{}
+	for tid, run := range runs {
+		if _, ok := corrections[tid]; ok {
+			continue
+		}
+
+		stationSeq := make([]martaapi.Station, len(run))
 		for i := range run {
-			err := c.upserter.AddRecordToDatabase(run, i)
-			if err != nil {
-				c.logger.Error(fmt.Sprintf("failed to upsert MARTA API response to postgres: %s", err.Error()))
-			}
+			stationSeq[i] = martaapi.Station(run[i].Station)
+		}
+		line, dir := martaapi.ClassifySequenceList(
+			stationSeq,
+			martaapi.Line(run[0].Line),
+			martaapi.Direction(run[0].Direction),
+		)
+
+		corrections[tid] = correction{
+			line: line,
+			dir:  dir,
+		}
+	}
+
+	for _, rec := range records {
+		corr := corrections[rec.TrainID]
+		err := c.upserter.AddRecordToDatabase(
+			rec,
+			martaapi.Line(corr.line),
+			martaapi.Direction(corr.dir),
+		)
+		if err != nil {
+			c.logger.Error(fmt.Sprintf("failed to upsert MARTA API response to postgres: %s", err.Error()))
 		}
 	}
 
