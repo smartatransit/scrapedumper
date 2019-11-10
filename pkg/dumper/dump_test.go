@@ -8,6 +8,7 @@ import (
 
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/dumper/dumperfakes"
+	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/postgres/postgresfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -221,17 +222,9 @@ var _ = Describe("Dump", func() {
 				Expect(err).To(BeNil())
 				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(4))
 
-				run, idx := upserter.AddRecordToDatabaseArgsForCall(0)
-				run2, idx2 := upserter.AddRecordToDatabaseArgsForCall(1)
-				Expect(run).To(Equal(run2))
-				Expect(idx).To(Equal(0))
-				Expect(idx2).To(Equal(1))
-
-				run, idx = upserter.AddRecordToDatabaseArgsForCall(0)
-				run2, idx2 = upserter.AddRecordToDatabaseArgsForCall(1)
-				Expect(run).To(Equal(run2))
-				Expect(idx).To(Equal(0))
-				Expect(idx2).To(Equal(1))
+				_, l, d := upserter.AddRecordToDatabaseArgsForCall(0)
+				Expect(l).To(Equal(martaapi.Blue))
+				Expect(d).To(Equal(martaapi.North))
 			})
 		})
 	})

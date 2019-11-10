@@ -210,10 +210,6 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 	}
 	corrections := map[string]correction{}
 	for tid, run := range runs {
-		if _, ok := corrections[tid]; ok {
-			continue
-		}
-
 		stationSeq := make([]martaapi.Station, len(run))
 		for i := range run {
 			stationSeq[i] = martaapi.Station(run[i].Station)
