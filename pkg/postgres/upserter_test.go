@@ -50,14 +50,14 @@ var _ = Describe("Upserter", func() {
 			)
 		})
 		JustBeforeEach(func() {
-			callErr = upserter.AddRecordToDatabase([]martaapi.Schedule{rec}, 0)
+			callErr = upserter.AddRecordToDatabase(rec, martaapi.Green, martaapi.North)
 		})
 		When("the eventTime is malformed", func() {
 			BeforeEach(func() {
 				rec.EventTime = "asdf"
 			})
 			It("fails", func() {
-				Expect(callErr).To(MatchError("failed to parse record event time `asdf`: parsing time \"asdf\": month out of range"))
+				Expect(callErr).To(MatchError(MatchRegexp("^failed to parse record event time `asdf`: parsing time \"asdf\"")))
 			})
 		})
 		When("the check for the latest matching run fails", func() {
