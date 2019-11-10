@@ -271,7 +271,7 @@ func (a *RepositoryAgent) DeleteStaleRuns(threshold EasternTime) (estimatesDropp
 		return
 	}
 
-	res, err := a.DB.Exec(`
+	res, err := tx.Exec(`
 DELETE FROM estimates
 USING runs
 WHERE runs.identifier = estimates.run_identifier
@@ -289,7 +289,7 @@ WHERE runs.identifier = estimates.run_identifier
 		return
 	}
 
-	res, err = a.DB.Exec(`
+	res, err = tx.Exec(`
 DELETE FROM arrivals
 USING runs
 WHERE runs.identifier = arrivals.run_identifier
@@ -307,7 +307,7 @@ WHERE runs.identifier = arrivals.run_identifier
 		return
 	}
 
-	res, err = a.DB.Exec(`
+	res, err = tx.Exec(`
 DELETE FROM runs
 WHERE most_recent_event_moment < $1`,
 		threshold,
