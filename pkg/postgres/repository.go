@@ -15,10 +15,12 @@ type Repository interface {
 	EnsureTables() error
 
 	GetLatestRunStartMomentFor(dir martaapi.Direction, line martaapi.Line, trainID string, asOfMoment EasternTime) (runFirstEventMoment EasternTime, mostRecentEventTime EasternTime, err error)
-	CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime) (err error)
+	CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction) (err error)
 	EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station) (err error)
 	AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error)
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
+
+	DeleteStaleRuns(threshold EasternTime) (estimatesDropped int64, arrivalsDropped int64, runsDropped int64, err error)
 }
 
 //NewRepository creates a new postgres respotitory
@@ -62,8 +64,10 @@ func RunGroupIdentifierFor(dir martaapi.Direction, line martaapi.Line, trainID s
 func (a *RepositoryAgent) EnsureTables() error {
 	_, err := a.DB.Exec(`
 CREATE TABLE IF NOT EXISTS runs
-(	identifier text,
-	run_group_identifier text NOT NULL,
+(	identifier varchar,
+	run_group_identifier varchar NOT NULL,
+	corrected_line varchar NOT NULL,
+	corrected_direction varchar NOT NULL,
 	most_recent_event_moment varchar NOT NULL,
 	run_first_event_moment varchar NOT NULL,
 	PRIMARY KEY (identifier)
@@ -74,9 +78,9 @@ CREATE TABLE IF NOT EXISTS runs
 
 	_, err = a.DB.Exec(`
 CREATE TABLE IF NOT EXISTS arrivals
-(	identifier text,
-	run_identifier text NOT NULL,
-	station text NOT NULL,
+(	identifier varchar,
+	run_identifier varchar NOT NULL,
+	station varchar NOT NULL,
 	arrival_time varchar,
 	PRIMARY KEY (identifier)
 )`)
@@ -86,9 +90,9 @@ CREATE TABLE IF NOT EXISTS arrivals
 
 	_, err = a.DB.Exec(`
 CREATE TABLE IF NOT EXISTS estimates
-(	identifier text,
-	run_identifier text NOT NULL,
-	arrival_identifier text NOT NULL,
+(	identifier varchar,
+	run_identifier varchar NOT NULL,
+	arrival_identifier varchar NOT NULL,
 	estimate_moment varchar NOT NULL,
 	estimated_arrival_time varchar NOT NULL,
 	PRIMARY KEY (identifier)
@@ -148,15 +152,17 @@ LIMIT 1`,
 }
 
 //CreateRunRecord inserts this run to the run table
-func (a *RepositoryAgent) CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime) (err error) {
+func (a *RepositoryAgent) CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction) (err error) {
 	res, err := a.DB.Exec(`
 INSERT INTO runs
-(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment)
-VALUES ($1, $2, $3, $4)`,
+(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment, corrected_line, corrected_direction)
+VALUES ($1, $2, $3, $4, $5, $6)`,
 		RunIdentifierFor(dir, line, trainID, runFirstEventMoment),
 		RunGroupIdentifierFor(dir, line, trainID),
 		runFirstEventMoment, //most_recent_event_moment
 		runFirstEventMoment,
+		correctedLine,
+		correctedDirection,
 	)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create run for dir `%s` line `%s` train `%s` and first event moment `%s`", dir, line, trainID, runFirstEventMoment)
@@ -255,6 +261,69 @@ WHERE arrivals.identifier = $2
 	}
 
 	err = errors.Wrapf(tx.Commit(), "failed to commit transaction when setting arrival time for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment.String(), station)
+	return
+}
+
+func (a *RepositoryAgent) DeleteStaleRuns(threshold EasternTime) (estimatesDropped int64, arrivalsDropped int64, runsDropped int64, err error) {
+	tx, err := a.DB.Begin()
+	if err != nil {
+		err = errors.Wrap(err, "failed to begin transaction to delete stale runs")
+		return
+	}
+
+	res, err := tx.Exec(`
+DELETE FROM estimates
+USING runs
+WHERE runs.identifier = estimates.run_identifier
+	AND runs.most_recent_event_moment < $1`,
+		threshold,
+	)
+	if err != nil {
+		rollback(tx, a.Logger)
+		err = errors.Wrap(err, "failed to drop estimates for stale runs")
+		return
+	}
+	if estimatesDropped, err = res.RowsAffected(); err != nil {
+		rollback(tx, a.Logger)
+		err = errors.Wrap(err, "received malformed result when dropping stale estimates")
+		return
+	}
+
+	res, err = tx.Exec(`
+DELETE FROM arrivals
+USING runs
+WHERE runs.identifier = arrivals.run_identifier
+	AND runs.most_recent_event_moment < $1`,
+		threshold,
+	)
+	if err != nil {
+		rollback(tx, a.Logger)
+		err = errors.Wrap(err, "failed to drop arrivals for stale runs")
+		return
+	}
+	if arrivalsDropped, err = res.RowsAffected(); err != nil {
+		rollback(tx, a.Logger)
+		err = errors.Wrap(err, "received malformed result when dropping stale arrivals")
+		return
+	}
+
+	res, err = tx.Exec(`
+DELETE FROM runs
+WHERE most_recent_event_moment < $1`,
+		threshold,
+	)
+	if err != nil {
+		rollback(tx, a.Logger)
+		err = errors.Wrap(err, "failed to drop stale runs")
+		return
+	}
+	if runsDropped, err = res.RowsAffected(); err != nil {
+		rollback(tx, a.Logger)
+		err = errors.Wrap(err, "received malformed result when dropping stale runs")
+		return
+	}
+
+	err = errors.Wrapf(tx.Commit(), "failed to commit transaction when dropping stale runs")
 	return
 }
 

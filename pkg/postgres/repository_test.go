@@ -43,8 +43,10 @@ var _ = Describe("Repository", func() {
 		var expectRunsTableExec = func() *sqlmock.ExpectedExec {
 			return smock.ExpectExec(`
 CREATE TABLE IF NOT EXISTS runs
-\(	identifier text,
-	run_group_identifier text NOT NULL,
+\(	identifier varchar,
+	run_group_identifier varchar NOT NULL,
+	corrected_line varchar NOT NULL,
+	corrected_direction varchar NOT NULL,
 	most_recent_event_moment varchar NOT NULL,
 	run_first_event_moment varchar NOT NULL,
 	PRIMARY KEY \(identifier\)
@@ -53,9 +55,9 @@ CREATE TABLE IF NOT EXISTS runs
 		var expectArrivalsTableExec = func() *sqlmock.ExpectedExec {
 			return smock.ExpectExec(`
 CREATE TABLE IF NOT EXISTS arrivals
-\(	identifier text,
-	run_identifier text NOT NULL,
-	station text NOT NULL,
+\(	identifier varchar,
+	run_identifier varchar NOT NULL,
+	station varchar NOT NULL,
 	arrival_time varchar,
 	PRIMARY KEY \(identifier\)
 \)`)
@@ -63,9 +65,9 @@ CREATE TABLE IF NOT EXISTS arrivals
 		var expectEstimatesTableExec = func() *sqlmock.ExpectedExec {
 			return smock.ExpectExec(`
 CREATE TABLE IF NOT EXISTS estimates
-\(	identifier text,
-	run_identifier text NOT NULL,
-	arrival_identifier text NOT NULL,
+\(	identifier varchar,
+	run_identifier varchar NOT NULL,
+	arrival_identifier varchar NOT NULL,
 	estimate_moment varchar NOT NULL,
 	estimated_arrival_time varchar NOT NULL,
 	PRIMARY KEY \(identifier\)
@@ -268,13 +270,15 @@ LIMIT 1`).
 		BeforeEach(func() {
 			exec = smock.ExpectExec(`
 INSERT INTO runs
-\(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment\)
-VALUES \(\$1, \$2, \$3, \$4\)`).
+\(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment, corrected_line, corrected_direction\)
+VALUES \(\$1, \$2, \$3, \$4, \$5, \$6\)`).
 				WithArgs(
 					"N_GOLD_193230_2019-08-05T18:15:16-04:00",
 					"N_GOLD_193230",
 					easternDate(2019, time.August, 5, 18, 15, 16, 0),
 					easternDate(2019, time.August, 5, 18, 15, 16, 0),
+					"RED",
+					"S",
 				)
 			exec.WillReturnResult(sqlmock.NewResult(0, 1))
 		})
@@ -284,6 +288,8 @@ VALUES \(\$1, \$2, \$3, \$4\)`).
 				martaapi.Line("GOLD"),
 				"193230",
 				easternDate(2019, time.August, 5, 18, 15, 16, 0),
+				martaapi.Line("RED"),
+				martaapi.Direction("S"),
 			)
 		})
 		When("the query fails", func() {
@@ -529,6 +535,116 @@ WHERE identifier = \$2`).
 			})
 			It("succeeds", func() {
 				Expect(callErr).To(MatchError("failed to commit transaction when setting arrival time for dir `N` line `GOLD` train `193230` first event moment `2019-08-05T18:15:16-04:00` and station `FIVE POINTS`: commit failed"))
+			})
+		})
+	})
+
+	Describe("DeleteStaleRuns", func() {
+		var (
+			callErr error
+
+			begin         *sqlmock.ExpectedBegin
+			estimatesExec *sqlmock.ExpectedExec
+			arrivalsExec  *sqlmock.ExpectedExec
+			runsExec      *sqlmock.ExpectedExec
+		)
+		BeforeEach(func() {
+			begin = smock.ExpectBegin()
+
+			estimatesExec = smock.ExpectExec(`
+DELETE FROM estimates
+USING runs
+WHERE runs.identifier = estimates.run_identifier
+	AND runs.most_recent_event_moment < \$1`).
+				WithArgs(
+					easternDate(2019, time.August, 5, 22, 15, 16, 0),
+				)
+			estimatesExec.WillReturnResult(sqlmock.NewResult(0, 1))
+
+			arrivalsExec = smock.ExpectExec(`
+DELETE FROM arrivals
+USING runs
+WHERE runs.identifier = arrivals.run_identifier
+	AND runs.most_recent_event_moment < \$1`).
+				WithArgs(
+					easternDate(2019, time.August, 5, 22, 15, 16, 0),
+				)
+			arrivalsExec.WillReturnResult(sqlmock.NewResult(0, 1))
+
+			runsExec = smock.ExpectExec(`
+DELETE FROM runs
+WHERE most_recent_event_moment < \$1`).
+				WithArgs(
+					easternDate(2019, time.August, 5, 22, 15, 16, 0),
+				)
+			runsExec.WillReturnResult(sqlmock.NewResult(0, 1))
+		})
+		JustBeforeEach(func() {
+			_, _, _, callErr = repo.DeleteStaleRuns(easternDate(2019, time.August, 5, 22, 15, 16, 0))
+		})
+		When("beginning the transaction fails", func() {
+			BeforeEach(func() {
+				begin.WillReturnError(errors.New("begin failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to begin transaction to delete stale runs: begin failed"))
+			})
+		})
+		When("dropping estimates fails", func() {
+			BeforeEach(func() {
+				estimatesExec.WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to drop estimates for stale runs: exec failed"))
+			})
+		})
+		When("dropping estimates returns a malformed result", func() {
+			BeforeEach(func() {
+				estimatesExec.WillReturnResult(sqlmock.NewErrorResult(errors.New("couldn't get rows affected")))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("received malformed result when dropping stale estimates: couldn't get rows affected"))
+			})
+		})
+		When("dropping arrivals fails", func() {
+			BeforeEach(func() {
+				arrivalsExec.WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to drop arrivals for stale runs: exec failed"))
+			})
+		})
+		When("dropping arrivals returns a malformed result", func() {
+			BeforeEach(func() {
+				arrivalsExec.WillReturnResult(sqlmock.NewErrorResult(errors.New("couldn't get rows affected")))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("received malformed result when dropping stale arrivals: couldn't get rows affected"))
+			})
+		})
+		When("dropping runs fails", func() {
+			BeforeEach(func() {
+				runsExec.WillReturnError(errors.New("exec failed"))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("failed to drop stale runs: exec failed"))
+			})
+		})
+		When("dropping runs returns a malformed result", func() {
+			BeforeEach(func() {
+				runsExec.WillReturnResult(sqlmock.NewErrorResult(errors.New("couldn't get rows affected")))
+			})
+			It("fails", func() {
+				Expect(callErr).To(MatchError("received malformed result when dropping stale runs: couldn't get rows affected"))
+			})
+		})
+		When("committing the transaction fails", func() {
+			BeforeEach(func() {
+				smock.ExpectCommit().WillReturnError(errors.New("commit failed"))
+			})
+			It("succeeds", func() {
+				Expect(callErr).To(MatchError("failed to commit transaction when dropping stale runs: commit failed"))
+				Expect(smock.ExpectationsWereMet()).To(BeNil())
 			})
 		})
 	})

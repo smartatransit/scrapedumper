@@ -8,6 +8,7 @@ import (
 
 	"github.com/bipol/scrapedumper/pkg/dumper"
 	"github.com/bipol/scrapedumper/pkg/dumper/dumperfakes"
+	"github.com/bipol/scrapedumper/pkg/martaapi"
 	"github.com/bipol/scrapedumper/pkg/postgres/postgresfakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -167,7 +168,28 @@ var _ = Describe("Dump", func() {
 		BeforeEach(func() {
 			logger = zap.NewNop()
 			upserter = &postgresfakes.FakeUpserter{}
-			r = strings.NewReader("[{},{},{}]")
+			r = strings.NewReader(`[
+				{
+					"DIRECTION": "N",
+					"LINE": "BLUE",
+					"TRAIN_ID": "206401"
+				},
+				{
+					"DIRECTION": "N",
+					"LINE": "BLUE",
+					"TRAIN_ID": "206402"
+				},
+				{
+					"DIRECTION": "N",
+					"LINE": "BLUE",
+					"TRAIN_ID": "206402"
+				},
+				{
+					"DIRECTION": "N",
+					"LINE": "BLUE",
+					"TRAIN_ID": "206401"
+				}
+			]`)
 			err = nil
 		})
 		JustBeforeEach(func() {
@@ -192,13 +214,17 @@ var _ = Describe("Dump", func() {
 			})
 			It("logs and moves on", func() {
 				Expect(err).To(BeNil())
-				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(3))
+				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(4))
 			})
 		})
 		When("all goes well", func() {
 			It("succeeds", func() {
 				Expect(err).To(BeNil())
-				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(3))
+				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(4))
+
+				_, l, d := upserter.AddRecordToDatabaseArgsForCall(0)
+				Expect(l).To(Equal(martaapi.Blue))
+				Expect(d).To(Equal(martaapi.North))
 			})
 		})
 	})

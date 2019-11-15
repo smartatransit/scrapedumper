@@ -9,10 +9,12 @@ import (
 )
 
 type FakeUpserter struct {
-	AddRecordToDatabaseStub        func(martaapi.Schedule) error
+	AddRecordToDatabaseStub        func(martaapi.Schedule, martaapi.Line, martaapi.Direction) error
 	addRecordToDatabaseMutex       sync.RWMutex
 	addRecordToDatabaseArgsForCall []struct {
 		arg1 martaapi.Schedule
+		arg2 martaapi.Line
+		arg3 martaapi.Direction
 	}
 	addRecordToDatabaseReturns struct {
 		result1 error
@@ -24,16 +26,18 @@ type FakeUpserter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeUpserter) AddRecordToDatabase(arg1 martaapi.Schedule) error {
+func (fake *FakeUpserter) AddRecordToDatabase(arg1 martaapi.Schedule, arg2 martaapi.Line, arg3 martaapi.Direction) error {
 	fake.addRecordToDatabaseMutex.Lock()
 	ret, specificReturn := fake.addRecordToDatabaseReturnsOnCall[len(fake.addRecordToDatabaseArgsForCall)]
 	fake.addRecordToDatabaseArgsForCall = append(fake.addRecordToDatabaseArgsForCall, struct {
 		arg1 martaapi.Schedule
-	}{arg1})
-	fake.recordInvocation("AddRecordToDatabase", []interface{}{arg1})
+		arg2 martaapi.Line
+		arg3 martaapi.Direction
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("AddRecordToDatabase", []interface{}{arg1, arg2, arg3})
 	fake.addRecordToDatabaseMutex.Unlock()
 	if fake.AddRecordToDatabaseStub != nil {
-		return fake.AddRecordToDatabaseStub(arg1)
+		return fake.AddRecordToDatabaseStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -48,17 +52,17 @@ func (fake *FakeUpserter) AddRecordToDatabaseCallCount() int {
 	return len(fake.addRecordToDatabaseArgsForCall)
 }
 
-func (fake *FakeUpserter) AddRecordToDatabaseCalls(stub func(martaapi.Schedule) error) {
+func (fake *FakeUpserter) AddRecordToDatabaseCalls(stub func(martaapi.Schedule, martaapi.Line, martaapi.Direction) error) {
 	fake.addRecordToDatabaseMutex.Lock()
 	defer fake.addRecordToDatabaseMutex.Unlock()
 	fake.AddRecordToDatabaseStub = stub
 }
 
-func (fake *FakeUpserter) AddRecordToDatabaseArgsForCall(i int) martaapi.Schedule {
+func (fake *FakeUpserter) AddRecordToDatabaseArgsForCall(i int) (martaapi.Schedule, martaapi.Line, martaapi.Direction) {
 	fake.addRecordToDatabaseMutex.RLock()
 	defer fake.addRecordToDatabaseMutex.RUnlock()
 	argsForCall := fake.addRecordToDatabaseArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeUpserter) AddRecordToDatabaseReturns(result1 error) {

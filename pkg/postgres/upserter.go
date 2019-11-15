@@ -11,7 +11,7 @@ import (
 //reconcile separate records from the same train run
 //go:generate counterfeiter . Upserter
 type Upserter interface {
-	AddRecordToDatabase(martaapi.Schedule) error
+	AddRecordToDatabase(rec martaapi.Schedule, correctedLine martaapi.Line, correctedDir martaapi.Direction) (err error)
 }
 
 //NewUpserter creates a new postgres upserter
@@ -43,7 +43,7 @@ func newRunRequired(
 
 //AddRecordToDatabase upserts a record to the database, while
 //attempting to reconcile separate records from the same train run
-func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
+func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule, correctedLine martaapi.Line, correctedDir martaapi.Direction) (err error) {
 	goEventTime, err := time.ParseInLocation(martaapi.MartaAPIDatetimeFormat, rec.EventTime, EasternTimeZone)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to parse record event time `%s`", rec.EventTime)
@@ -65,7 +65,6 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 		goEventTime,
 		a.runLifetime,
 	) {
-		// panic(nil)
 		runFirstEventMoment = eventTime
 
 		if err = a.repo.CreateRunRecord(
@@ -73,6 +72,8 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule) (err error) {
 			martaapi.Line(rec.Line),
 			rec.TrainID,
 			runFirstEventMoment,
+			correctedLine,
+			correctedDir,
 		); err != nil {
 			err = errors.Wrapf(err, "failed to create run record for `%s`", rec.String())
 			return
