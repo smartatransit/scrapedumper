@@ -98,20 +98,25 @@ func (a DirectoryDumperAgent) DumpDirectory(ctx context.Context, dir string, sta
 			continue
 		}
 
-		var file afero.File
-		path := path.Join(dir, finfo.Name())
-		file, err = a.fs.Open(path)
+		err = a.DumpFile(ctx, path.Join(dir, finfo.Name()), finfo.Name())
 		if err != nil {
-			err = errors.Wrapf(err, "failed to open file `%s` for reading", path)
-			return
-		}
-
-		err = a.dumper.Dump(ctx, file, finfo.Name())
-		if err != nil {
-			err = errors.Wrapf(err, "failed to dump contents of file `%s`", path)
 			return
 		}
 	}
 
 	return nil
+}
+
+//DumpFile loads a single file
+func (a DirectoryDumperAgent) DumpFile(ctx context.Context, path string, name string) (err error) {
+	file, err := a.fs.Open(path)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to open file `%s` for reading", path)
+		return
+	}
+	defer file.Close()
+
+	err = a.dumper.Dump(ctx, file, name)
+	err = errors.Wrapf(err, "failed to dump contents of file `%s`", path)
+	return
 }
