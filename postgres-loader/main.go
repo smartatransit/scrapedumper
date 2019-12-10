@@ -33,7 +33,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger, _ := zap.NewProduction()
+	logger, _ := zap.NewDevelopment()
 	defer func() {
 		_ = logger.Sync() // flushes buffer, if any
 	}()

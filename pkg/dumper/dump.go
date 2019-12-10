@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/afero"
 
@@ -227,6 +228,8 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 	}
 
 	for _, rec := range records {
+		start := time.Now()
+
 		corr := corrections[rec.TrainID]
 		err := c.upserter.AddRecordToDatabase(
 			rec,
@@ -236,6 +239,8 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 		if err != nil {
 			c.logger.Error(fmt.Sprintf("failed to upsert MARTA API response to postgres: %s", err.Error()))
 		}
+
+		fmt.Println(time.Since(start).String())
 	}
 
 	return nil
