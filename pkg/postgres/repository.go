@@ -19,6 +19,7 @@ type Repository interface {
 	EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station) (err error)
 	AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error)
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
+	GetActiveRuns() (runs map[martaapi.Line]map[martaapi.Direction][]Run, err error)
 
 	DeleteStaleRuns(threshold EasternTime) (estimatesDropped int64, arrivalsDropped int64, runsDropped int64, err error)
 }
@@ -324,6 +325,88 @@ WHERE most_recent_event_moment < $1`,
 	}
 
 	err = errors.Wrapf(tx.Commit(), "failed to commit transaction when dropping stale runs")
+	return
+}
+
+func (a *RepositoryAgent) GetActiveRuns() (runs map[martaapi.Line]map[martaapi.Direction][]Run, err error) {
+	rows, err := a.DB.Query(`
+SELECT identifier, run_group_identifier, corrected_line,
+  corrected_direction, most_recent_event_moment,
+  run_first_event_moment, arrivals.identifier,
+  arrivals.station, arrivals.arrival_time,
+  estimates.estimate_moment, estimates.estimated_arrival_time
+
+FROM runs
+JOIN arrivals
+  ON runs.identifier = arrivals.run_identifier
+JOIN estimates
+  ON arrivals.identifier = estimates.arrival_identifier
+
+ORDER BY estimates.identifier ASC`,
+	)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to get active runs")
+		return
+	}
+
+	runsByIdentifier := map[string]Run{}
+	for rows.Next() {
+		var run Run
+		var arrival Arrival
+		var estimateMoment, estimatedArrivalTime EasternTime
+		err = rows.Scan(
+			&run.Identifier,
+			&run.RunGroupIdentifier,
+			&run.CorrectedLine,
+			&run.CorrectedDirection,
+			&run.MostRecentEventMoment,
+			&run.RunFirstEventMoment,
+			&arrival.Station,
+			&arrival.ArrivalTime, //TODO nullable?
+			&estimateMoment,
+			&estimatedArrivalTime,
+		)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to scan run")
+			return
+		}
+		run.setLineDirectionAndTrainID()
+
+		if seenRun, ok := runsByIdentifier[run.Identifier]; ok {
+			run = seenRun
+		} else {
+			runsByIdentifier[run.Identifier] = run
+		}
+
+		if seenArrival, ok := run.Arrivals[arrival.Station]; ok {
+			//if we've already seen this run, use the existing copy
+			arrival = seenArrival
+		} else {
+			run.Arrivals[arrival.Station] = arrival
+		}
+
+		arrival.Estimates[estimateMoment] = estimatedArrivalTime
+	}
+
+	//group by line and direction and, in the process, throw out all the completed runs
+	runs = map[martaapi.Line]map[martaapi.Direction][]Run{}
+	for _, run := range runsByIdentifier {
+		//skip if the final station has an arrival time marked
+		terminus := martaapi.Termini[run.Line][run.Direction]
+		if finish, ok := run.Arrivals[terminus]; ok && finish.ArrivalTime != nil {
+			continue
+		}
+
+		if _, ok := runs[run.Line]; !ok {
+			runs[run.Line] = map[martaapi.Direction][]Run{}
+		}
+		if _, ok := runs[run.Line][run.Direction]; !ok {
+			runs[run.Line][run.Direction] = []Run{}
+		}
+
+		runs[run.Line][run.Direction] = append(runs[run.Line][run.Direction], run)
+	}
+
 	return
 }
 

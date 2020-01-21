@@ -135,11 +135,6 @@ var LineStations = map[Line][]Station{
 		KingMemorialStation,
 		InmanParkStation,
 		EdgewoodCandlerParkStation,
-		EastLakeStation,
-		DecaturStation,
-		AvondaleStation,
-		KensingtonStation,
-		IndianCreekStation,
 	},
 	Blue: []Station{
 		HamiltonEHolmesStation,
@@ -208,4 +203,24 @@ var LineDirections = map[Line][]Direction{
 	Blue:  []Direction{East, West},
 	Gold:  []Direction{North, South},
 	Red:   []Direction{North, South},
+}
+
+//Termini allow for lookups of all the terminuseses of the different lines
+var Termini = map[Line]map[Direction]Station{
+	Green: map[Direction]Station{
+		East: EdgewoodCandlerParkStation,
+		West: BankheadStation,
+	},
+	Blue: map[Direction]Station{
+		East: IndianCreekStation,
+		West: HamiltonEHolmesStation,
+	},
+	Gold: map[Direction]Station{
+		North: DunwoodyStation,
+		South: AirportStation,
+	},
+	Red: map[Direction]Station{
+		North: NorthSpringsStation,
+		South: AirportStation,
+	},
 }
