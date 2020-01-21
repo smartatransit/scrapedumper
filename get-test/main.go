@@ -22,9 +22,7 @@ import (
 //
 
 type options struct {
-	DataLocation             string `long:"data-location" env:"DATA_LOCATION" description:"local path to from which to collect JSON files" required:"true"`
 	PostgresConnectionString string `long:"postgres-connection-string" env:"POSTGRES_CONNECTION_STRING" required:"true"`
-	StartAt                  string `long:"start-at-alphabetically" env:"START_AT_ALPHABETICALLY"`
 }
 
 func main() {
