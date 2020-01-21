@@ -23,11 +23,7 @@ type Repository interface {
 	//get all runs that
 	// (1) have been updated since touchThreshold
 	// (2) haven't arrived at their destination
-
-	//TODO here's the issue: once a train arrives, we won't send an update
-	// to remove it, so maybe the "haven't arrived" bit should be the
-	// responsibility of the caller (the websocket API) instead?
-	GetActiveRuns(touchThreshold EasternTime) (runs map[martaapi.Line]map[martaapi.Direction][]Run, err error)
+	GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[martaapi.Line]map[martaapi.Direction][]Run, err error)
 
 	DeleteStaleRuns(threshold EasternTime) (estimatesDropped int64, arrivalsDropped int64, runsDropped int64, err error)
 }
@@ -336,7 +332,7 @@ WHERE most_recent_event_moment < $1`,
 	return
 }
 
-func (a *RepositoryAgent) GetActiveRuns(touchThreshold EasternTime) (runs map[martaapi.Line]map[martaapi.Direction][]Run, err error) {
+func (a *RepositoryAgent) GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[martaapi.Line]map[martaapi.Direction][]Run, err error) {
 	rows, err := a.DB.Query(`
 SELECT identifier, run_group_identifier, corrected_line,
   corrected_direction, most_recent_event_moment,
@@ -401,12 +397,6 @@ ORDER BY estimates.identifier ASC`,
 	//group by line and direction and, in the process, throw out all the completed runs
 	runs = map[martaapi.Line]map[martaapi.Direction][]Run{}
 	for _, run := range runsByIdentifier {
-		//skip if the final station has an arrival time marked
-		terminus := martaapi.Termini[run.Line][run.Direction]
-		if finish, ok := run.Arrivals[terminus]; ok && finish.ArrivalTime != nil {
-			continue
-		}
-
 		if _, ok := runs[run.Line]; !ok {
 			runs[run.Line] = map[martaapi.Direction][]Run{}
 		}

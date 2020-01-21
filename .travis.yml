@@ -40,6 +40,13 @@ script:
   - export tags="build-${TRAVIS_BUILD_NUMBER},commit-${TRAVIS_COMMIT::8},$TAG"
   - ./build_and_push_image.sh
 
+  # TODO remove
+  - GOOS=linux go build -o ./get-test/get-test ./get-test/
+  - export docker_repo=smartatransit/get-test
+  - export docker_build_directory=./get-test/
+  - export tags="build-${TRAVIS_BUILD_NUMBER},commit-${TRAVIS_COMMIT::8},$TAG"
+  - ./build_and_push_image.sh
+
 after_success:
   - touch coverage.txt; find . -name "*.coverprofile" | xargs -l cat >> coverage.txt
   - curl -s https://codecov.io/bash | bash -
