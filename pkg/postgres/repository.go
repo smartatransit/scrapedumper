@@ -334,10 +334,10 @@ WHERE most_recent_event_moment < $1`,
 
 func (a *RepositoryAgent) GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[martaapi.Line]map[martaapi.Direction][]Run, err error) {
 	rows, err := a.DB.Query(`
-SELECT identifier, run_group_identifier, corrected_line,
-  corrected_direction, most_recent_event_moment,
-  run_first_event_moment, arrivals.identifier,
-  arrivals.station, arrivals.arrival_time,
+SELECT runs.identifier, runs.run_group_identifier,
+  runs.corrected_line, runs.corrected_direction,
+  runs.most_recent_event_moment, runs.run_first_event_moment,
+  arrivals.identifier, arrivals.station, arrivals.arrival_time,
   estimates.estimate_moment, estimates.estimated_arrival_time
 
 FROM runs
@@ -367,6 +367,7 @@ ORDER BY estimates.identifier ASC`,
 			&run.CorrectedDirection,
 			&run.MostRecentEventMoment,
 			&run.RunFirstEventMoment,
+			&arrival.Identifier,
 			&arrival.Station,
 			&arrival.ArrivalTime, //TODO nullable?
 			&estimateMoment,
