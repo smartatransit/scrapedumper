@@ -369,7 +369,7 @@ ORDER BY estimates.identifier ASC`,
 			&run.RunFirstEventMoment,
 			&arrival.Identifier,
 			&arrival.Station,
-			&arrival.ArrivalTime, //TODO nullable?
+			&arrival.ArrivalTime,
 			&estimateMoment,
 			&estimatedArrivalTime,
 		)
