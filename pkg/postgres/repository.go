@@ -383,6 +383,7 @@ ORDER BY estimates.identifier ASC`,
 			run = seenRun
 		} else {
 			runsByIdentifier[run.Identifier] = run
+			run.Arrivals = map[martaapi.Station]Arrival{}
 		}
 
 		if seenArrival, ok := run.Arrivals[arrival.Station]; ok {
@@ -390,6 +391,7 @@ ORDER BY estimates.identifier ASC`,
 			arrival = seenArrival
 		} else {
 			run.Arrivals[arrival.Station] = arrival
+			arrival.Estimates = map[EasternTime]EasternTime{}
 		}
 
 		arrival.Estimates[estimateMoment] = estimatedArrivalTime
