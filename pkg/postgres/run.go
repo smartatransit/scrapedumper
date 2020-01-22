@@ -21,7 +21,7 @@ type Run struct {
 	Arrivals Arrivals `json:"arrivals"`
 }
 
-func (r Run) setLineDirectionAndTrainID() {
+func (r *Run) setLineDirectionAndTrainID() {
 	parts := strings.Split(r.Identifier, "_")
 
 	r.Line = martaapi.Line(parts[0])
@@ -30,8 +30,8 @@ func (r Run) setLineDirectionAndTrainID() {
 }
 
 func (r Run) Finished() bool {
-	setLineDirectionAndTrainID()
-	terminus := martaapi.Termini[run.Line][run.Direction]
+	r.setLineDirectionAndTrainID()
+	terminus := martaapi.Termini[r.Line][r.Direction]
 	return run.Arrivals[terminus].ArrivalTime != nil
 }
 
