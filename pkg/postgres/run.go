@@ -32,7 +32,7 @@ func (r *Run) setLineDirectionAndTrainID() {
 func (r Run) Finished() bool {
 	r.setLineDirectionAndTrainID()
 	terminus := martaapi.Termini[r.Line][r.Direction]
-	return run.Arrivals[terminus].ArrivalTime != nil
+	return r.Arrivals[terminus].ArrivalTime != nil
 }
 
 type Arrivals map[martaapi.Station]Arrival
