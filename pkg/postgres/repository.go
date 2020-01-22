@@ -20,9 +20,6 @@ type Repository interface {
 	AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error)
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
 
-	//get all runs that
-	// (1) have been updated since touchThreshold
-	// (2) haven't arrived at their destination
 	GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[martaapi.Line]map[martaapi.Direction][]Run, err error)
 
 	DeleteStaleRuns(threshold EasternTime) (estimatesDropped int64, arrivalsDropped int64, runsDropped int64, err error)

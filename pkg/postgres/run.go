@@ -29,6 +29,12 @@ func (r Run) setLineDirectionAndTrainID() {
 	r.TrainID = parts[2]
 }
 
+func (r Run) Finished() bool {
+	setLineDirectionAndTrainID()
+	terminus := martaapi.Termini[run.Line][run.Direction]
+	return run.Arrivals[terminus].ArrivalTime != nil
+}
+
 type Arrivals map[martaapi.Station]Arrival
 
 type Arrival struct {
