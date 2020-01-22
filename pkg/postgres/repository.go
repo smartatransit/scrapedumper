@@ -382,16 +382,16 @@ ORDER BY estimates.identifier ASC`,
 		if seenRun, ok := runsByIdentifier[run.Identifier]; ok {
 			run = seenRun
 		} else {
-			runsByIdentifier[run.Identifier] = run
 			run.Arrivals = map[martaapi.Station]Arrival{}
+			runsByIdentifier[run.Identifier] = run
 		}
 
 		if seenArrival, ok := run.Arrivals[arrival.Station]; ok {
 			//if we've already seen this run, use the existing copy
 			arrival = seenArrival
 		} else {
-			run.Arrivals[arrival.Station] = arrival
 			arrival.Estimates = map[EasternTime]EasternTime{}
+			run.Arrivals[arrival.Station] = arrival
 		}
 
 		arrival.Estimates[estimateMoment] = estimatedArrivalTime
