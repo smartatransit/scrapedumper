@@ -1,37 +1,22 @@
 package postgres
 
 import (
-	"strings"
-
 	"github.com/bipol/scrapedumper/pkg/martaapi"
 )
 
 type Run struct {
-	Identifier            string `json:"identifier"`
-	RunGroupIdentifier    string `json:"run_group_identifier"`
-	CorrectedLine         string `json:"corrected_line"`
-	CorrectedDirection    string `json:"corrected_direction"`
-	MostRecentEventMoment string `json:"most_recent_event_moment"`
-	RunFirstEventMoment   string `json:"run_first_event_moment"`
-
-	Line      martaapi.Line      `json:"line"`
-	Direction martaapi.Direction `json:"direction"`
-	TrainID   string             `json:"train_id"`
+	Identifier            string             `json:"identifier"`
+	RunGroupIdentifier    string             `json:"run_group_identifier"`
+	CorrectedLine         martaapi.Line      `json:"line"`
+	CorrectedDirection    martaapi.Direction `json:"direction"`
+	MostRecentEventMoment string             `json:"most_recent_event_moment"`
+	RunFirstEventMoment   string             `json:"run_first_event_moment"`
 
 	Arrivals Arrivals `json:"arrivals"`
 }
 
-func (r *Run) setLineDirectionAndTrainID() {
-	parts := strings.Split(r.Identifier, "_")
-
-	r.Line = martaapi.Line(parts[0])
-	r.Direction = martaapi.Direction(parts[1])
-	r.TrainID = parts[2]
-}
-
 func (r Run) Finished() bool {
-	r.setLineDirectionAndTrainID()
-	terminus := martaapi.Termini[r.Line][r.Direction]
+	terminus := martaapi.Termini[r.CorrectedLine][r.CorrectedDirection]
 	return r.Arrivals[terminus].ArrivalTime != nil
 }
 

@@ -20,7 +20,7 @@ type Repository interface {
 	AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error)
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
 
-	GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[martaapi.Line]map[martaapi.Direction][]Run, err error)
+	GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[string]Run, err error)
 
 	DeleteStaleRuns(threshold EasternTime) (estimatesDropped int64, arrivalsDropped int64, runsDropped int64, err error)
 }
@@ -329,7 +329,7 @@ WHERE most_recent_event_moment < $1`,
 	return
 }
 
-func (a *RepositoryAgent) GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[martaapi.Line]map[martaapi.Direction][]Run, err error) {
+func (a *RepositoryAgent) GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[string]Run, err error) {
 	rows, err := a.DB.Query(`
 SELECT runs.identifier, runs.run_group_identifier,
   runs.corrected_line, runs.corrected_direction,
@@ -352,7 +352,7 @@ ORDER BY estimates.identifier ASC`,
 		return
 	}
 
-	runsByIdentifier := map[string]Run{}
+	runs = map[string]Run{}
 	for rows.Next() {
 		var run Run
 		var arrival Arrival
@@ -374,13 +374,12 @@ ORDER BY estimates.identifier ASC`,
 			err = errors.Wrapf(err, "failed to scan run")
 			return
 		}
-		run.setLineDirectionAndTrainID()
 
-		if seenRun, ok := runsByIdentifier[run.Identifier]; ok {
+		if seenRun, ok := runs[run.Identifier]; ok {
 			run = seenRun
 		} else {
 			run.Arrivals = map[martaapi.Station]Arrival{}
-			runsByIdentifier[run.Identifier] = run
+			runs[run.Identifier] = run
 		}
 
 		if seenArrival, ok := run.Arrivals[arrival.Station]; ok {
@@ -392,19 +391,6 @@ ORDER BY estimates.identifier ASC`,
 		}
 
 		arrival.Estimates[estimateMoment] = estimatedArrivalTime
-	}
-
-	//group by line and direction and, in the process, throw out all the completed runs
-	runs = map[martaapi.Line]map[martaapi.Direction][]Run{}
-	for _, run := range runsByIdentifier {
-		if _, ok := runs[run.Line]; !ok {
-			runs[run.Line] = map[martaapi.Direction][]Run{}
-		}
-		if _, ok := runs[run.Line][run.Direction]; !ok {
-			runs[run.Line][run.Direction] = []Run{}
-		}
-
-		runs[run.Line][run.Direction] = append(runs[run.Line][run.Direction], run)
 	}
 
 	return
