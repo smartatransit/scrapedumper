@@ -329,6 +329,9 @@ WHERE most_recent_event_moment < $1`,
 	return
 }
 
+//GetRecentlyActiveRuns collects all the data about any runs that have been updated
+//since touchThreshold. The Run#Finished method can be used to determine which runs
+//have arrived at their terminal station, and can therefore be removed from state.
 func (a *RepositoryAgent) GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[string]Run, err error) {
 	rows, err := a.DB.Query(`
 SELECT runs.identifier, runs.run_group_identifier,
