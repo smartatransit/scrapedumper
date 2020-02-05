@@ -102,17 +102,17 @@ type FakeRepository struct {
 		result2 postgres.EasternTime
 		result3 error
 	}
-	GetRecentlyActiveRunsStub        func(postgres.EasternTime) (map[martaapi.Line]map[martaapi.Direction][]postgres.Run, error)
+	GetRecentlyActiveRunsStub        func(postgres.EasternTime) (map[string]postgres.Run, error)
 	getRecentlyActiveRunsMutex       sync.RWMutex
 	getRecentlyActiveRunsArgsForCall []struct {
 		arg1 postgres.EasternTime
 	}
 	getRecentlyActiveRunsReturns struct {
-		result1 map[martaapi.Line]map[martaapi.Direction][]postgres.Run
+		result1 map[string]postgres.Run
 		result2 error
 	}
 	getRecentlyActiveRunsReturnsOnCall map[int]struct {
-		result1 map[martaapi.Line]map[martaapi.Direction][]postgres.Run
+		result1 map[string]postgres.Run
 		result2 error
 	}
 	SetArrivalTimeStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station, postgres.EasternTime, postgres.EasternTime) error
@@ -521,7 +521,7 @@ func (fake *FakeRepository) GetLatestRunStartMomentForReturnsOnCall(i int, resul
 	}{result1, result2, result3}
 }
 
-func (fake *FakeRepository) GetRecentlyActiveRuns(arg1 postgres.EasternTime) (map[martaapi.Line]map[martaapi.Direction][]postgres.Run, error) {
+func (fake *FakeRepository) GetRecentlyActiveRuns(arg1 postgres.EasternTime) (map[string]postgres.Run, error) {
 	fake.getRecentlyActiveRunsMutex.Lock()
 	ret, specificReturn := fake.getRecentlyActiveRunsReturnsOnCall[len(fake.getRecentlyActiveRunsArgsForCall)]
 	fake.getRecentlyActiveRunsArgsForCall = append(fake.getRecentlyActiveRunsArgsForCall, struct {
@@ -545,7 +545,7 @@ func (fake *FakeRepository) GetRecentlyActiveRunsCallCount() int {
 	return len(fake.getRecentlyActiveRunsArgsForCall)
 }
 
-func (fake *FakeRepository) GetRecentlyActiveRunsCalls(stub func(postgres.EasternTime) (map[martaapi.Line]map[martaapi.Direction][]postgres.Run, error)) {
+func (fake *FakeRepository) GetRecentlyActiveRunsCalls(stub func(postgres.EasternTime) (map[string]postgres.Run, error)) {
 	fake.getRecentlyActiveRunsMutex.Lock()
 	defer fake.getRecentlyActiveRunsMutex.Unlock()
 	fake.GetRecentlyActiveRunsStub = stub
@@ -558,28 +558,28 @@ func (fake *FakeRepository) GetRecentlyActiveRunsArgsForCall(i int) postgres.Eas
 	return argsForCall.arg1
 }
 
-func (fake *FakeRepository) GetRecentlyActiveRunsReturns(result1 map[martaapi.Line]map[martaapi.Direction][]postgres.Run, result2 error) {
+func (fake *FakeRepository) GetRecentlyActiveRunsReturns(result1 map[string]postgres.Run, result2 error) {
 	fake.getRecentlyActiveRunsMutex.Lock()
 	defer fake.getRecentlyActiveRunsMutex.Unlock()
 	fake.GetRecentlyActiveRunsStub = nil
 	fake.getRecentlyActiveRunsReturns = struct {
-		result1 map[martaapi.Line]map[martaapi.Direction][]postgres.Run
+		result1 map[string]postgres.Run
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeRepository) GetRecentlyActiveRunsReturnsOnCall(i int, result1 map[martaapi.Line]map[martaapi.Direction][]postgres.Run, result2 error) {
+func (fake *FakeRepository) GetRecentlyActiveRunsReturnsOnCall(i int, result1 map[string]postgres.Run, result2 error) {
 	fake.getRecentlyActiveRunsMutex.Lock()
 	defer fake.getRecentlyActiveRunsMutex.Unlock()
 	fake.GetRecentlyActiveRunsStub = nil
 	if fake.getRecentlyActiveRunsReturnsOnCall == nil {
 		fake.getRecentlyActiveRunsReturnsOnCall = make(map[int]struct {
-			result1 map[martaapi.Line]map[martaapi.Direction][]postgres.Run
+			result1 map[string]postgres.Run
 			result2 error
 		})
 	}
 	fake.getRecentlyActiveRunsReturnsOnCall[i] = struct {
-		result1 map[martaapi.Line]map[martaapi.Direction][]postgres.Run
+		result1 map[string]postgres.Run
 		result2 error
 	}{result1, result2}
 }
