@@ -46,5 +46,6 @@ func (ae *EasternTime) Scan(value interface{}) error {
 
 //Value implements the db/sql.Valuer interface
 func (ae EasternTime) Value() (driver.Value, error) {
+	ae = EasternTime(time.Time(ae).In(EasternTimeZone))
 	return ae.String(), nil
 }
