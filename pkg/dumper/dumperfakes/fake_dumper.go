@@ -6,7 +6,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/bipol/scrapedumper/pkg/dumper"
+	"github.com/smartatransit/scrapedumper/pkg/dumper"
 )
 
 type FakeDumper struct {

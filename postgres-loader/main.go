@@ -11,9 +11,9 @@ import (
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 
-	"github.com/bipol/scrapedumper/pkg/bulk"
-	"github.com/bipol/scrapedumper/pkg/dumper"
-	"github.com/bipol/scrapedumper/pkg/postgres"
+	"github.com/smartatransit/scrapedumper/pkg/bulk"
+	"github.com/smartatransit/scrapedumper/pkg/dumper"
+	"github.com/smartatransit/scrapedumper/pkg/postgres"
 
 	//database/sql driver
 	_ "github.com/lib/pq"

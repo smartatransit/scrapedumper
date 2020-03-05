@@ -10,12 +10,12 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
 
-	"github.com/bipol/scrapedumper/pkg/circuitbreaker"
-	"github.com/bipol/scrapedumper/pkg/dumper/dumperfakes"
-	"github.com/bipol/scrapedumper/pkg/martaapi/martaapifakes"
-	"github.com/bipol/scrapedumper/pkg/worker"
-	. "github.com/bipol/scrapedumper/pkg/worker"
-	"github.com/bipol/scrapedumper/pkg/worker/workerfakes"
+	"github.com/smartatransit/scrapedumper/pkg/circuitbreaker"
+	"github.com/smartatransit/scrapedumper/pkg/dumper/dumperfakes"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi/martaapifakes"
+	"github.com/smartatransit/scrapedumper/pkg/worker"
+	. "github.com/smartatransit/scrapedumper/pkg/worker"
+	"github.com/smartatransit/scrapedumper/pkg/worker/workerfakes"
 )
 
 var _ = Describe("Client", func() {

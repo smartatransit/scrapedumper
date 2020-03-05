@@ -9,7 +9,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"go.uber.org/zap"
 
-	"github.com/bipol/scrapedumper/pkg/postgres"
+	"github.com/smartatransit/scrapedumper/pkg/postgres"
 
 	//database/sql driver
 	_ "github.com/lib/pq"

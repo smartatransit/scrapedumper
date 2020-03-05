@@ -5,7 +5,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/bipol/scrapedumper/pkg/bulk"
+	"github.com/smartatransit/scrapedumper/pkg/bulk"
 )
 
 type FakeFile struct {

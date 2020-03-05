@@ -4,7 +4,7 @@ package workerfakes
 import (
 	"sync"
 
-	"github.com/bipol/scrapedumper/pkg/worker"
+	"github.com/smartatransit/scrapedumper/pkg/worker"
 )
 
 type FakeWorkGetter struct {

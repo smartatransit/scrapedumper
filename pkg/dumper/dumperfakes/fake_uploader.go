@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/bipol/scrapedumper/pkg/dumper"
+	"github.com/smartatransit/scrapedumper/pkg/dumper"
 )
 
 type FakeUploader struct {

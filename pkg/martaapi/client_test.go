@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
 
-	"github.com/bipol/scrapedumper/pkg/martaapi"
-	. "github.com/bipol/scrapedumper/pkg/martaapi"
-	"github.com/bipol/scrapedumper/pkg/martaapi/martaapifakes"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
+	. "github.com/smartatransit/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi/martaapifakes"
 )
 
 var _ = Describe("Client", func() {

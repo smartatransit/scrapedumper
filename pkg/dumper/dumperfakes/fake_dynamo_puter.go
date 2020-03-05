@@ -7,7 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/bipol/scrapedumper/pkg/dumper"
+	"github.com/smartatransit/scrapedumper/pkg/dumper"
 )
 
 type FakeDynamoPuter struct {

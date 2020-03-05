@@ -3,7 +3,7 @@ package postgres
 import (
 	"time"
 
-	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"github.com/pkg/errors"
 )
 

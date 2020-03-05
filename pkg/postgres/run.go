@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 )
 
 type Run struct {

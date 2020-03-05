@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
 
-	. "github.com/bipol/scrapedumper/pkg/circuitbreaker"
+	. "github.com/smartatransit/scrapedumper/pkg/circuitbreaker"
 )
 
 var _ = Describe("Circuit", func() {

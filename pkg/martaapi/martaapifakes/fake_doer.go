@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 )
 
 type FakeDoer struct {

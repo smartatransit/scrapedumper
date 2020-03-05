@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bipol/scrapedumper/pkg/bulk"
+	"github.com/smartatransit/scrapedumper/pkg/bulk"
 )
 
 type FakeFileInfo struct {

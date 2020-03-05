@@ -1,9 +1,9 @@
 package config
 
 import (
-	"github.com/bipol/scrapedumper/pkg/dumper"
-	"github.com/bipol/scrapedumper/pkg/martaapi"
-	"github.com/bipol/scrapedumper/pkg/worker"
+	"github.com/smartatransit/scrapedumper/pkg/dumper"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/worker"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )

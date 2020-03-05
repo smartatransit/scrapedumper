@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
-	"github.com/bipol/scrapedumper/pkg/dumper"
+	"github.com/smartatransit/scrapedumper/pkg/dumper"
 )
 
 //DirectoryDumper loads a file into the Postgres database
