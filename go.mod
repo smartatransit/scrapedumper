@@ -1,4 +1,4 @@
-module github.com/bipol/scrapedumper
+module github.com/smartatransit/scrapedumper
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.3.3
