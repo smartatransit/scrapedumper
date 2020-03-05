@@ -4,8 +4,8 @@ package postgresfakes
 import (
 	"sync"
 
-	"github.com/bipol/scrapedumper/pkg/martaapi"
-	"github.com/bipol/scrapedumper/pkg/postgres"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/postgres"
 )
 
 type FakeRepository struct {

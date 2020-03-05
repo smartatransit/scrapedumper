@@ -17,8 +17,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"go.uber.org/zap"
 
-	"github.com/bipol/scrapedumper/pkg/martaapi"
-	"github.com/bipol/scrapedumper/pkg/postgres"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/postgres"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Dumper

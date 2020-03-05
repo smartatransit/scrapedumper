@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )

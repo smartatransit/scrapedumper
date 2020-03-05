@@ -1,9 +1,9 @@
 package config_test
 
 import (
-	"github.com/bipol/scrapedumper/pkg/config"
-	"github.com/bipol/scrapedumper/pkg/martaapi"
-	"github.com/bipol/scrapedumper/pkg/worker"
+	"github.com/smartatransit/scrapedumper/pkg/config"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/worker"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

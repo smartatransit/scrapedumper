@@ -6,9 +6,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/bipol/scrapedumper/pkg/circuitbreaker"
-	"github.com/bipol/scrapedumper/pkg/dumper"
-	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/circuitbreaker"
+	"github.com/smartatransit/scrapedumper/pkg/dumper"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )

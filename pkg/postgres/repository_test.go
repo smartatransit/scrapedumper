@@ -8,8 +8,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"go.uber.org/zap"
 
-	"github.com/bipol/scrapedumper/pkg/martaapi"
-	"github.com/bipol/scrapedumper/pkg/postgres"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/postgres"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

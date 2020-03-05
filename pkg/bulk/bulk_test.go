@@ -5,9 +5,9 @@ import (
 	"errors"
 	"os"
 
-	"github.com/bipol/scrapedumper/pkg/bulk"
-	"github.com/bipol/scrapedumper/pkg/bulk/bulkfakes"
-	"github.com/bipol/scrapedumper/pkg/dumper/dumperfakes"
+	"github.com/smartatransit/scrapedumper/pkg/bulk"
+	"github.com/smartatransit/scrapedumper/pkg/bulk/bulkfakes"
+	"github.com/smartatransit/scrapedumper/pkg/dumper/dumperfakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

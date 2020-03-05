@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/bipol/scrapedumper/pkg/martaapi"
-	"github.com/bipol/scrapedumper/pkg/postgres"
-	"github.com/bipol/scrapedumper/pkg/postgres/postgresfakes"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/postgres"
+	"github.com/smartatransit/scrapedumper/pkg/postgres/postgresfakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

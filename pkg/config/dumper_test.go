@@ -4,9 +4,9 @@ import (
 	"database/sql"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/bipol/scrapedumper/pkg/config"
-	"github.com/bipol/scrapedumper/pkg/config/configfakes"
-	"github.com/bipol/scrapedumper/pkg/dumper"
+	"github.com/smartatransit/scrapedumper/pkg/config"
+	"github.com/smartatransit/scrapedumper/pkg/config/configfakes"
+	"github.com/smartatransit/scrapedumper/pkg/dumper"
 	"github.com/pkg/errors"
 
 	. "github.com/onsi/ginkgo"

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"sync"
 
-	"github.com/bipol/scrapedumper/pkg/config"
+	"github.com/smartatransit/scrapedumper/pkg/config"
 )
 
 type FakeSQLOpener struct {

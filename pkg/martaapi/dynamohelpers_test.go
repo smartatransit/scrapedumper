@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 )
 
 var _ = Describe("Dynamohelpers", func() {

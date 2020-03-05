@@ -6,7 +6,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/bipol/scrapedumper/pkg/martaapi"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 )
 
 type FakeScheduleFinder struct {
