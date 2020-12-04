@@ -3,11 +3,21 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
+
+type LastestEstimate struct {
+	Direction   martaapi.Direction
+	Line        martaapi.Line
+	TrainID     string
+
+	NextArrival EasternTime
+	EventTime   EasternTime
+}
 
 //Repository implements interactions with Postgres through GORM
 //go:generate counterfeiter . Repository
@@ -21,11 +31,12 @@ type Repository interface {
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
 
 	GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[string]Run, err error)
+	GetLatestEstimates(station martaapi.Station) (res []LastestEstimate, err error)
 
 	DeleteStaleRuns(threshold EasternTime) (estimatesDropped int64, arrivalsDropped int64, runsDropped int64, err error)
 }
 
-//NewRepository creates a new postgres respotitory
+//NewRepository creates a new postgres respository
 func NewRepository(
 	logger *zap.Logger,
 	db *sql.DB,
@@ -60,6 +71,12 @@ func RunIdentifierFor(dir martaapi.Direction, line martaapi.Line, trainID string
 //RunGroupIdentifierFor creates a run group identifier for the given metadata
 func RunGroupIdentifierFor(dir martaapi.Direction, line martaapi.Line, trainID string) string {
 	return fmt.Sprintf("%s_%s_%s", dir, line, trainID)
+}
+
+//ParseRunGroupIdentifier converts a run group identifier back into metadata
+func ParseRunGroupIdentifier(id string) (dir martaapi.Direction, line martaapi.Line, trainID string) {
+	parts := strings.Split(id, "_")
+	return martaapi.Direction(parts[0]), martaapi.Line(parts[1]), parts[2]
 }
 
 //EnsureTables ensures that all necessary tables exist
@@ -394,6 +411,58 @@ ORDER BY estimates.identifier ASC`,
 		}
 
 		arrival.Estimates[estimateMoment] = estimatedArrivalTime
+	}
+
+	return
+}
+
+//GetRecentlyActiveRuns collects all the data about any runs that have been updated
+//since touchThreshold. The Run#Finished method can be used to determine which runs
+//have arrived at their terminal station, and can therefore be removed from state.
+func (a *RepositoryAgent) GetLatestEstimates(station martaapi.Station) (res []LastestEstimate, err error) {
+	rows, err := a.DB.Query(`
+WITH station_estimates AS (
+  SELECT runs.run_group_identifier,
+    estimates.estimated_arrival_time,
+    estimates.estimate_moment,
+    ROW_NUMBER() OVER (PARTITION BY runs.run_group_identifier
+      ORDER BY estimates.estimate_moment DESC) AS rank
+  FROM arrivals
+  JOIN estimates
+    ON estimates.arrival_identifier = arrivals.identifier
+  JOIN runs
+    ON arrivals.run_identifier = runs.identifier
+  WHERE arrivals.station = 'GEORGIA STATE STATION'
+    AND arrivals.arrival_time IS NULL)
+
+SELECT *
+  FROM station_estimates
+  WHERE rank = 1`,
+		station,
+	)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to fetch arrival estimates")
+		return
+	}
+
+	res = []LastestEstimate{}
+	for rows.Next() {
+		var sched LastestEstimate
+		var rgIdentifier string
+		err = rows.Scan(
+			&rgIdentifier,
+			&sched.NextArrival,
+			&sched.EventTime,
+		)
+		if err != nil {
+			err = errors.Wrapf(err, "failed to scan run")
+			return
+		}
+
+		dir, line, train := ParseRunGroupIdentifier(rgIdentifier)
+		sched.Direction = dir
+		sched.Line      = line
+		sched.TrainID   = train
 	}
 
 	return
