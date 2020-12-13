@@ -432,12 +432,13 @@ WITH station_estimates AS (
     ON estimates.arrival_identifier = arrivals.identifier
   JOIN runs
     ON arrivals.run_identifier = runs.identifier
-  WHERE arrivals.station = 'GEORGIA STATE STATION'
+  WHERE arrivals.station = $1
     AND arrivals.arrival_time IS NULL)
 
 SELECT *
   FROM station_estimates
-  WHERE rank = 1`,
+  WHERE rank = 1
+`,
 		station,
 	)
 	if err != nil {
