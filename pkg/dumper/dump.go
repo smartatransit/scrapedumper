@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"go.uber.org/zap"
 
+	"github.com/smartatransit/scrapedumper/pkg/alias"
 	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"github.com/smartatransit/scrapedumper/pkg/postgres"
 )
@@ -179,13 +180,15 @@ func (c DynamoDumpHandler) Dump(ctx context.Context, r io.Reader, path string) e
 type PostgresDumpHandler struct {
 	logger   *zap.Logger
 	upserter postgres.Upserter
+	aliaser  alias.AliasLookup
 }
 
 // NewPostgresDumpHandler instantiates a new dynamo dump handler
-func NewPostgresDumpHandler(logger *zap.Logger, upserter postgres.Upserter) PostgresDumpHandler {
+func NewPostgresDumpHandler(logger *zap.Logger, upserter postgres.Upserter, aliaser alias.AliasLookup) PostgresDumpHandler {
 	return PostgresDumpHandler{
 		logger,
 		upserter,
+		aliaser,
 	}
 }
 
@@ -208,11 +211,33 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 		line martaapi.Line
 		dir  martaapi.Direction
 	}
-	corrections := map[string]correction{}
+
+	var (
+		// As we loop over stuff, we're going to keep track of _all_
+		// the various line, direction, and station names we come across.
+		// Then, we'll loop over those and resolve the database IDs of
+		// their respective records by fuzzy-matching.
+		seenLineNames = map[string]struct{}{}
+		seenDirectionNames = map[string]struct{}{}
+		seenStationNames = map[string]struct{}{}
+
+		lineNameResolutions = map[string]uint{}
+		directionNameResolutions = map[string]uint{}
+		stationNameResolutions = map[string]uint{}
+
+		// This, on the other hand, is not for correcting the _spelling_
+		// of the line and direction names, but for checking whether
+		// the train is actually moving in the direction it claims to be
+		// moving
+		corrections = map[string]correction{}
+	)
+
+
 	for tid, run := range runs {
 		stationSeq := make([]martaapi.Station, len(run))
 		for i := range run {
 			stationSeq[i] = martaapi.Station(run[i].Station)
+			seenStationNames[run[i].Station] = struct{}{}
 		}
 		line, dir := martaapi.ClassifySequenceList(
 			stationSeq,
@@ -220,18 +245,39 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 			martaapi.Direction(run[0].Direction),
 		)
 
+		seenLineNames[string(line)] = struct{}{}
+		seenDirectionNames[string(dir)] = struct{}{}
+
 		corrections[tid] = correction{
 			line: line,
 			dir:  dir,
 		}
 	}
 
+	if c.aliaser != nil {
+		lineNameResolutions = c.ResolveAliases(ctx, seenLineNames, "line")
+		directionNameResolutions = c.ResolveAliases(ctx, seenDirectionNames, "direction")
+		stationNameResolutions = c.ResolveAliases(ctx, seenStationNames, "station")
+	}
+
 	for _, rec := range records {
 		corr := corrections[rec.TrainID]
+		var lineID, stationID, directionID *uint
+
+		if c.aliaser != nil {
+			lineID = ptrToUint(lineNameResolutions[string(corr.line)])
+			stationID = ptrToUint(directionNameResolutions[string(corr.dir)])
+			directionID = ptrToUint(stationNameResolutions[rec.Station])
+		}
+
 		err := c.upserter.AddRecordToDatabase(
 			rec,
 			martaapi.Line(corr.line),
 			martaapi.Direction(corr.dir),
+
+			lineID,
+			stationID,
+			directionID,
 		)
 		if err != nil {
 			c.logger.Error(fmt.Sprintf("failed to upsert MARTA API response to postgres: %s", err.Error()))
@@ -239,4 +285,23 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 	}
 
 	return nil
+}
+
+func (c PostgresDumpHandler) ResolveAliases(ctx context.Context, queries map[string]struct{}, kind string) (map[string]uint) {
+	resolutions := map[string]uint{}
+	for q := range queries {
+		resolution, err := c.aliaser.FindNamedElementByRoughName(kind, q)
+		if err != nil {
+			c.logger.Debug(fmt.Sprintf("couldn't match %s name `%s`: %s", kind, q, err.Error()))
+			continue
+		}
+
+		resolutions[q] = resolution
+	}
+
+	return resolutions
+}
+
+func ptrToUint(val uint) *uint {
+	return &val
 }

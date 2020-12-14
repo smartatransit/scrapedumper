@@ -3,25 +3,27 @@ package postgres
 import (
 	"time"
 
-	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"github.com/pkg/errors"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 )
 
 //Upserter upserts a record to the database, while attempting to
 //reconcile separate records from the same train run
 //go:generate counterfeiter . Upserter
 type Upserter interface {
-	AddRecordToDatabase(rec martaapi.Schedule, correctedLine martaapi.Line, correctedDir martaapi.Direction) (err error)
+	AddRecordToDatabase(rec martaapi.Schedule, correctedLine martaapi.Line, correctedDir martaapi.Direction, lineID *uint, dirID *uint, stationID *uint) (err error)
 }
 
 //NewUpserter creates a new postgres upserter
 func NewUpserter(
 	repo Repository,
 	runLifetime time.Duration,
+	thirdRail bool,
 ) *UpserterAgent {
 	return &UpserterAgent{
 		repo:        repo,
 		runLifetime: runLifetime,
+		thirdRail:   thirdRail,
 	}
 }
 
@@ -29,6 +31,7 @@ func NewUpserter(
 type UpserterAgent struct {
 	repo        Repository
 	runLifetime time.Duration
+	thirdRail   bool
 }
 
 func newRunRequired(
@@ -43,7 +46,14 @@ func newRunRequired(
 
 //AddRecordToDatabase upserts a record to the database, while
 //attempting to reconcile separate records from the same train run
-func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule, correctedLine martaapi.Line, correctedDir martaapi.Direction) (err error) {
+func (a *UpserterAgent) AddRecordToDatabase(
+	rec martaapi.Schedule,
+	correctedLine martaapi.Line,
+	correctedDir martaapi.Direction,
+	lineID uint,
+	dirID uint,
+	stationID uint,
+) (err error) {
 	goEventTime, err := time.ParseInLocation(martaapi.MartaAPIDatetimeFormat, rec.EventTime, EasternTimeZone)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to parse record event time `%s`", rec.EventTime)
@@ -74,6 +84,8 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule, correctedLine
 			runFirstEventMoment,
 			correctedLine,
 			correctedDir,
+			lineID,
+			dirID,
 		); err != nil {
 			err = errors.Wrapf(err, "failed to create run record for `%s`", rec.String())
 			return
@@ -86,6 +98,7 @@ func (a *UpserterAgent) AddRecordToDatabase(rec martaapi.Schedule, correctedLine
 		rec.TrainID,
 		runFirstEventMoment,
 		martaapi.Station(rec.Station),
+		stationID,
 	); err != nil {
 		err = errors.Wrapf(err, "failed to ensure pre-existing arrival record for `%s`", rec.String())
 		return

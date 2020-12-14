@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"github.com/pkg/errors"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"go.uber.org/zap"
 )
 
 type LastestEstimate struct {
-	Direction   martaapi.Direction
-	Line        martaapi.Line
-	TrainID     string
+	Direction martaapi.Direction
+	Line      martaapi.Line
+	TrainID   string
 
 	NextArrival EasternTime
 	EventTime   EasternTime
@@ -22,11 +22,11 @@ type LastestEstimate struct {
 //Repository implements interactions with Postgres through GORM
 //go:generate counterfeiter . Repository
 type Repository interface {
-	EnsureTables() error
+	EnsureTables(thirdRail bool) error
 
 	GetLatestRunStartMomentFor(dir martaapi.Direction, line martaapi.Line, trainID string, asOfMoment EasternTime) (runFirstEventMoment EasternTime, mostRecentEventTime EasternTime, err error)
-	CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction) (err error)
-	EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station) (err error)
+	CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction, lineID *uint, dirID *uint) (err error)
+	EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, stationID *uint) (err error)
 	AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error)
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
 
@@ -79,30 +79,56 @@ func ParseRunGroupIdentifier(id string) (dir martaapi.Direction, line martaapi.L
 	return martaapi.Direction(parts[0]), martaapi.Line(parts[1]), parts[2]
 }
 
-//EnsureTables ensures that all necessary tables exist
-func (a *RepositoryAgent) EnsureTables() error {
-	_, err := a.DB.Exec(`
+//EnsureTables ensures that all necessary tables exist. Three fields (line_id,
+//station_id, and direction_id) are always included, however if thirdRail is
+//false, they are always left empty. Including them in both cases simplifies
+//our update/select queries.
+func (a *RepositoryAgent) EnsureTables(thirdRail bool) error {
+	runsExtras := `
+	line_id integer,
+	direction_id integer,
+`
+	if thirdRail {
+		runsExtras = `
+	line_id integer REFERENCES lines(id),
+	direction_id integer REFERENCES directions(id),
+`
+	}
+
+	_, err := a.DB.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS runs
 (	identifier varchar,
 	run_group_identifier varchar NOT NULL,
 	corrected_line varchar NOT NULL,
 	corrected_direction varchar NOT NULL,
 	most_recent_event_moment varchar NOT NULL,
-	run_first_event_moment varchar NOT NULL,
+	run_first_event_moment varchar NOT NULL,%s
+
 	PRIMARY KEY (identifier)
-)`)
+)`, runsExtras))
 	if err != nil {
 		return errors.Wrapf(err, "failed to ensure runs table")
 	}
 
-	_, err = a.DB.Exec(`
+	arrivalExtras := `
+	station_id integer,
+`
+	if thirdRail {
+		arrivalExtras = `
+	station_id integer REFERENCES stations(id),
+`
+	}
+
+	_, err = a.DB.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS arrivals
 (	identifier varchar,
 	run_identifier varchar NOT NULL,
 	station varchar NOT NULL,
 	arrival_time varchar,
+	station_id integer,%s
+
 	PRIMARY KEY (identifier)
-)`)
+)`, arrivalExtras))
 	if err != nil {
 		return errors.Wrapf(err, "failed to ensure arrivals table")
 	}
@@ -171,17 +197,19 @@ LIMIT 1`,
 }
 
 //CreateRunRecord inserts this run to the run table
-func (a *RepositoryAgent) CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction) (err error) {
+func (a *RepositoryAgent) CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction, lineID *uint, dirID *uint) (err error) {
 	res, err := a.DB.Exec(`
 INSERT INTO runs
-(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment, corrected_line, corrected_direction)
-VALUES ($1, $2, $3, $4, $5, $6)`,
+(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment, corrected_line, corrected_direction, line_id, direction_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 		RunIdentifierFor(dir, line, trainID, runFirstEventMoment),
 		RunGroupIdentifierFor(dir, line, trainID),
 		runFirstEventMoment, //most_recent_event_moment
 		runFirstEventMoment,
 		correctedLine,
 		correctedDirection,
+		lineID,
+		dirID,
 	)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create run for dir `%s` line `%s` train `%s` and first event moment `%s`", dir, line, trainID, runFirstEventMoment)
@@ -202,15 +230,16 @@ VALUES ($1, $2, $3, $4, $5, $6)`,
 }
 
 //EnsureArrivalRecord ensures that a record exists for the specified arrival
-func (a *RepositoryAgent) EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station) (err error) {
+func (a *RepositoryAgent) EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, stationID *uint) (err error) {
 	_, err = a.DB.Exec(`
 INSERT INTO arrivals
-(identifier, run_identifier, station)
-VALUES ($1, $2, $3)
+(identifier, run_identifier, station, station_id)
+VALUES ($1, $2, $3, $4)
 ON CONFLICT DO NOTHING`,
 		ArrivalIdentifierFor(dir, line, trainID, runFirstEventMoment, station),
 		RunIdentifierFor(dir, line, trainID, runFirstEventMoment),
 		station,
+		stationID,
 	)
 	err = errors.Wrapf(err, "failed to ensure arrival for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment, station)
 	return
