@@ -11,9 +11,13 @@ import (
 )
 
 type LastestEstimate struct {
-	Direction martaapi.Direction
-	Line      martaapi.Line
-	TrainID   string
+	Direction   string
+	Line        string
+	Station     string
+	DirectionID *uint
+	LineID      *uint
+	StationID   *uint
+	TrainID     string
 
 	NextArrival EasternTime
 	EventTime   EasternTime
@@ -454,6 +458,15 @@ WITH station_estimates AS (
   SELECT runs.run_group_identifier,
     estimates.estimated_arrival_time,
     estimates.estimate_moment,
+
+    directions.name,
+    lines.name,
+    stations.name,
+
+    directions.id,
+    lines.id,
+    stations.id,
+
     ROW_NUMBER() OVER (PARTITION BY runs.run_group_identifier
       ORDER BY estimates.estimate_moment DESC) AS rank
   FROM arrivals
@@ -461,6 +474,12 @@ WITH station_estimates AS (
     ON estimates.arrival_identifier = arrivals.identifier
   JOIN runs
     ON arrivals.run_identifier = runs.identifier
+  JOIN lines
+    ON lines.id = runs.line_id
+  JOIN directions
+    ON lines.id = runs.direction_id
+  JOIN stations
+    ON lines.id = arrivals.station_id
   WHERE arrivals.station = $1
     AND arrivals.arrival_time IS NULL)
 
@@ -478,21 +497,44 @@ SELECT *
 	res = []LastestEstimate{}
 	for rows.Next() {
 		var sched LastestEstimate
-		var rgIdentifier string
+		var rgIdentifier, dir, line, station string
+		var dirID, lineID, stationID sql.NullInt32
 		err = rows.Scan(
 			&rgIdentifier,
 			&sched.NextArrival,
 			&sched.EventTime,
+
+			&dir,
+			&line,
+			&station,
+			&dirID,
+			&lineID,
+			&stationID,
 		)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to scan run")
 			return
 		}
 
-		dir, line, train := ParseRunGroupIdentifier(rgIdentifier)
+		_, _, train := ParseRunGroupIdentifier(rgIdentifier)
 		sched.Direction = dir
-		sched.Line      = line
-		sched.TrainID   = train
+		sched.Line = line
+		sched.Station = station
+		sched.TrainID = train
+		if dirID.Valid {
+			var u uint = uint(dirID.Int32)
+			sched.DirectionID = &u
+		}
+		if lineID.Valid {
+			var u uint = uint(lineID.Int32)
+			sched.LineID = &u
+		}
+		if stationID.Valid {
+			var u uint = uint(stationID.Int32)
+			sched.StationID = &u
+		}
+
+		res = append(res, sched)
 	}
 
 	return
