@@ -50,9 +50,9 @@ func (a *UpserterAgent) AddRecordToDatabase(
 	rec martaapi.Schedule,
 	correctedLine martaapi.Line,
 	correctedDir martaapi.Direction,
-	lineID uint,
-	dirID uint,
-	stationID uint,
+	lineID *uint,
+	dirID *uint,
+	stationID *uint,
 ) (err error) {
 	goEventTime, err := time.ParseInLocation(martaapi.MartaAPIDatetimeFormat, rec.EventTime, EasternTimeZone)
 	if err != nil {

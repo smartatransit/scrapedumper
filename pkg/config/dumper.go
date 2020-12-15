@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	gpostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/driver/postgres"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -146,7 +146,7 @@ func BuildDumper(
 		// of a third-rail database
 		var aliaser alias.AliasLookup
 		if c.ThirdRailContext {
-			gormDB, err := gorm.Open(postgres.New(postgres.Config{
+			gormDB, err := gorm.Open(gpostgres.New(gpostgres.Config{
 				Conn: db,
 			}), &gorm.Config{})
 			if err != nil {

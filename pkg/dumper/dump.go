@@ -217,13 +217,13 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 		// the various line, direction, and station names we come across.
 		// Then, we'll loop over those and resolve the database IDs of
 		// their respective records by fuzzy-matching.
-		seenLineNames = map[string]struct{}{}
+		seenLineNames      = map[string]struct{}{}
 		seenDirectionNames = map[string]struct{}{}
-		seenStationNames = map[string]struct{}{}
+		seenStationNames   = map[string]struct{}{}
 
-		lineNameResolutions = map[string]uint{}
-		directionNameResolutions = map[string]uint{}
-		stationNameResolutions = map[string]uint{}
+		lineNameResolutions      = map[string]*uint{}
+		directionNameResolutions = map[string]*uint{}
+		stationNameResolutions   = map[string]*uint{}
 
 		// This, on the other hand, is not for correcting the _spelling_
 		// of the line and direction names, but for checking whether
@@ -231,7 +231,6 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 		// moving
 		corrections = map[string]correction{}
 	)
-
 
 	for tid, run := range runs {
 		stationSeq := make([]martaapi.Station, len(run))
@@ -255,9 +254,9 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 	}
 
 	if c.aliaser != nil {
-		lineNameResolutions = c.ResolveAliases(ctx, seenLineNames, "line")
-		directionNameResolutions = c.ResolveAliases(ctx, seenDirectionNames, "direction")
-		stationNameResolutions = c.ResolveAliases(ctx, seenStationNames, "station")
+		lineNameResolutions = c.ResolveAliases(ctx, seenLineNames, "lines")
+		directionNameResolutions = c.ResolveAliases(ctx, seenDirectionNames, "directions")
+		stationNameResolutions = c.ResolveAliases(ctx, seenStationNames, "stations")
 	}
 
 	for _, rec := range records {
@@ -265,9 +264,9 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 		var lineID, stationID, directionID *uint
 
 		if c.aliaser != nil {
-			lineID = ptrToUint(lineNameResolutions[string(corr.line)])
-			stationID = ptrToUint(directionNameResolutions[string(corr.dir)])
-			directionID = ptrToUint(stationNameResolutions[rec.Station])
+			lineID = lineNameResolutions[string(corr.line)]
+			stationID = directionNameResolutions[string(corr.dir)]
+			directionID = stationNameResolutions[rec.Station]
 		}
 
 		err := c.upserter.AddRecordToDatabase(
@@ -287,12 +286,12 @@ func (c PostgresDumpHandler) Dump(ctx context.Context, r io.Reader, path string)
 	return nil
 }
 
-func (c PostgresDumpHandler) ResolveAliases(ctx context.Context, queries map[string]struct{}, kind string) (map[string]uint) {
-	resolutions := map[string]uint{}
+func (c PostgresDumpHandler) ResolveAliases(ctx context.Context, queries map[string]struct{}, kind string) map[string]*uint {
+	resolutions := map[string]*uint{}
 	for q := range queries {
 		resolution, err := c.aliaser.FindNamedElementByRoughName(kind, q)
 		if err != nil {
-			c.logger.Debug(fmt.Sprintf("couldn't match %s name `%s`: %s", kind, q, err.Error()))
+			c.logger.Error(fmt.Sprintf("couldn't match %s name `%s`: %s", kind, q, err.Error()))
 			continue
 		}
 
@@ -300,8 +299,4 @@ func (c PostgresDumpHandler) ResolveAliases(ctx context.Context, queries map[str
 	}
 
 	return resolutions
-}
-
-func ptrToUint(val uint) *uint {
-	return &val
 }

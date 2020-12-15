@@ -128,8 +128,7 @@ CREATE TABLE IF NOT EXISTS arrivals
 (	identifier varchar,
 	run_identifier varchar NOT NULL,
 	station varchar NOT NULL,
-	arrival_time varchar,
-	station_id integer,%s
+	arrival_time varchar,%s
 
 	PRIMARY KEY (identifier)
 )`, arrivalExtras))

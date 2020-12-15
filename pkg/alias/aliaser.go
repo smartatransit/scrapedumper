@@ -1,30 +1,27 @@
 package alias
 
 import (
-	"errors"
 	"fmt"
+	"strings"
 	"time"
 
-	"github.com/jinzhu/gorm"
 	cache "github.com/patrickmn/go-cache"
 	"github.com/sahilm/fuzzy"
+	"gorm.io/gorm"
 )
 
 type Alias struct {
-	NamedElementID uint `gorm:"not null"`
-	Alias          string
+	NamedElementType string `gorm:"not null"`
+	NamedElementID   uint   `gorm:"not null"`
+	Alias            string
 }
 type Aliases []Alias
 
 func (a Aliases) String(i int) string {
-	return a[i].Alias
+	return normalize(a[i].Alias)
 }
 func (a Aliases) Len() int {
 	return len(a)
-}
-
-type ID struct {
-	ID uint `json:"-" gorm:"primary_key"`
 }
 
 type AliasLookupAgent struct {
@@ -45,27 +42,45 @@ func New(
 	}
 }
 
-type AliasLookup interface {
-	FindNamedElementByRoughName(kind, name string) (uint, error)
+func normalize(s string) string {
+	return strings.TrimSpace(strings.TrimSuffix(strings.ToUpper(s), "STATION"))
 }
 
-func (a AliasLookupAgent) FindNamedElementByRoughName(kind, name string) (uint, error) {
-	var aliases Aliases
-	if aliasesI, found := a.cache.Get("kind"); found {
-		aliases = aliasesI.(Aliases)
+type AliasLookup interface {
+	FindNamedElementByRoughName(kind, name string) (*uint, error)
+}
+
+func (a AliasLookupAgent) getAliases(kind string) (Aliases, error) {
+	var aliases map[string]Aliases
+	if aliasesI, found := a.cache.Get(""); found {
+		aliases = aliasesI.(map[string]Aliases)
 	} else {
-		a.db.Find(&aliases, "named_element_type = ?", kind)
-		a.cache.Set("kind", aliases, cache.DefaultExpiration)
+		var aliasList Aliases
+		if err := a.db.Find(&aliasList).Error; err != nil {
+			return nil, fmt.Errorf("Failed fetching aliases for type %s: %w", kind, err)
+		}
+
+		aliases = map[string]Aliases{}
+		for _, alias := range aliasList {
+			aliases[alias.NamedElementType] = append(aliases[alias.NamedElementType], alias)
+		}
+
+		a.cache.Set("", aliases, cache.DefaultExpiration)
 	}
 
-	matches := fuzzy.FindFrom(name, aliases)
+	return aliases[kind], nil
+}
+
+func (a AliasLookupAgent) FindNamedElementByRoughName(kind, name string) (*uint, error) {
+	aliases, err := a.getAliases(kind)
+	if err != nil {
+		return nil, err
+	}
+
+	matches := fuzzy.FindFrom(normalize(name), aliases)
 	if len(matches) > 0 {
-		var result Alias
-		a.db.Table("aliases").Find(&result, aliases[matches[0].Index].NamedElementID)
-
-		return result.NamedElementID, nil
-	} else {
-		err := errors.New(fmt.Sprintf("No station match for name %s", name))
-		return 0, err
+		return &aliases[matches[0].Index].NamedElementID, nil
 	}
+
+	return nil, fmt.Errorf("No %s match for name %s", kind, name)
 }
