@@ -120,9 +120,8 @@ func (c ScrapeAndDumpClient) scrapeAndDumpAll(ctx context.Context) (err error) {
 		if sdErr := c.scrapeAndDump(ctx, sd); sdErr != nil {
 			err = sdErr
 		}
-
 	}
-	return nil
+	return err
 }
 
 func (c ScrapeAndDumpClient) scrapeAndDump(ctx context.Context, sd ScrapeDump) (err error) {

@@ -34,15 +34,16 @@ func (fake *FakeUpserter) AddRecordToDatabase(arg1 martaapi.Schedule, arg2 marta
 		arg2 martaapi.Line
 		arg3 martaapi.Direction
 	}{arg1, arg2, arg3})
+	stub := fake.AddRecordToDatabaseStub
+	fakeReturns := fake.addRecordToDatabaseReturns
 	fake.recordInvocation("AddRecordToDatabase", []interface{}{arg1, arg2, arg3})
 	fake.addRecordToDatabaseMutex.Unlock()
-	if fake.AddRecordToDatabaseStub != nil {
-		return fake.AddRecordToDatabaseStub(arg1, arg2, arg3)
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.addRecordToDatabaseReturns
 	return fakeReturns.result1
 }
 
