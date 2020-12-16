@@ -45,15 +45,15 @@ func main() {
 	defer db.Close()
 
 	repo := postgres.NewRepository(logger, db)
-	err = repo.EnsureTables()
+	err = repo.EnsureTables(false)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fs := afero.NewOsFs()
 
-	upserter := postgres.NewUpserter(repo, time.Hour)
-	dumper := dumper.NewPostgresDumpHandler(logger, upserter)
+	upserter := postgres.NewUpserter(repo, time.Hour, false)
+	dumper := dumper.NewPostgresDumpHandler(logger, upserter, nil)
 	dirDumper := bulk.NewDirectoryDumper(fs, dumper)
 	err = dirDumper.DumpDirectory(
 		context.Background(),

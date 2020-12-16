@@ -49,6 +49,9 @@ CREATE TABLE IF NOT EXISTS runs
 	corrected_direction varchar NOT NULL,
 	most_recent_event_moment varchar NOT NULL,
 	run_first_event_moment varchar NOT NULL,
+	line_id integer,
+	direction_id integer,
+
 	PRIMARY KEY \(identifier\)
 \)`)
 		}
@@ -59,6 +62,8 @@ CREATE TABLE IF NOT EXISTS arrivals
 	run_identifier varchar NOT NULL,
 	station varchar NOT NULL,
 	arrival_time varchar,
+	station_id integer,
+
 	PRIMARY KEY \(identifier\)
 \)`)
 		}
@@ -95,7 +100,7 @@ CREATE INDEX ON runs USING btree\(
 		}
 
 		JustBeforeEach(func() {
-			callErr = repo.EnsureTables()
+			callErr = repo.EnsureTables(false)
 		})
 		When("the runs table fails", func() {
 			BeforeEach(func() {
@@ -270,8 +275,8 @@ LIMIT 1`).
 		BeforeEach(func() {
 			exec = smock.ExpectExec(`
 INSERT INTO runs
-\(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment, corrected_line, corrected_direction\)
-VALUES \(\$1, \$2, \$3, \$4, \$5, \$6\)`).
+\(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment, corrected_line, corrected_direction, line_id, direction_id\)
+VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8\)`).
 				WithArgs(
 					"N_GOLD_193230_2019-08-05T18:15:16-04:00",
 					"N_GOLD_193230",
@@ -279,6 +284,8 @@ VALUES \(\$1, \$2, \$3, \$4, \$5, \$6\)`).
 					easternDate(2019, time.August, 5, 18, 15, 16, 0),
 					"RED",
 					"S",
+					nil,
+					nil,
 				)
 			exec.WillReturnResult(sqlmock.NewResult(0, 1))
 		})
@@ -290,6 +297,7 @@ VALUES \(\$1, \$2, \$3, \$4, \$5, \$6\)`).
 				easternDate(2019, time.August, 5, 18, 15, 16, 0),
 				martaapi.Line("RED"),
 				martaapi.Direction("S"),
+				nil, nil,
 			)
 		})
 		When("the query fails", func() {
@@ -332,13 +340,14 @@ VALUES \(\$1, \$2, \$3, \$4, \$5, \$6\)`).
 		BeforeEach(func() {
 			exec = smock.ExpectExec(`
 INSERT INTO arrivals
-\(identifier, run_identifier, station\)
-VALUES \(\$1, \$2, \$3\)
+\(identifier, run_identifier, station, station_id\)
+VALUES \(\$1, \$2, \$3, \$4\)
 ON CONFLICT DO NOTHING`).
 				WithArgs(
 					"N_GOLD_193230_2019-08-05T18:15:16-04:00_FIVE POINTS",
 					"N_GOLD_193230_2019-08-05T18:15:16-04:00",
 					"FIVE POINTS",
+					nil,
 				)
 			exec.WillReturnResult(sqlmock.NewResult(0, 0))
 		})
@@ -349,6 +358,7 @@ ON CONFLICT DO NOTHING`).
 				"193230",
 				easternDate(2019, time.August, 5, 18, 15, 16, 0),
 				martaapi.Station("FIVE POINTS"),
+				nil,
 			)
 		})
 		When("the query fails", func() {

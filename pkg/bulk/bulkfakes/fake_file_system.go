@@ -32,15 +32,16 @@ func (fake *FakeFileSystem) Open(arg1 string) (afero.File, error) {
 	fake.openArgsForCall = append(fake.openArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.OpenStub
+	fakeReturns := fake.openReturns
 	fake.recordInvocation("Open", []interface{}{arg1})
 	fake.openMutex.Unlock()
-	if fake.OpenStub != nil {
-		return fake.OpenStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.openReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

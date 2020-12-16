@@ -34,15 +34,17 @@ func (fake *FakeSQLOpener) Spy(arg1 string, arg2 string) (*sql.DB, error) {
 		arg1 string
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.Stub
+	returns := fake.returns
 	fake.recordInvocation("SQLOpener", []interface{}{arg1, arg2})
 	fake.mutex.Unlock()
-	if fake.Stub != nil {
-		return fake.Stub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.returns.result1, fake.returns.result2
+	return returns.result1, returns.result2
 }
 
 func (fake *FakeSQLOpener) CallCount() int {

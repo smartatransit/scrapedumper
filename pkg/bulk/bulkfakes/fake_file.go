@@ -178,15 +178,16 @@ func (fake *FakeFile) Close() error {
 	ret, specificReturn := fake.closeReturnsOnCall[len(fake.closeArgsForCall)]
 	fake.closeArgsForCall = append(fake.closeArgsForCall, struct {
 	}{})
+	stub := fake.CloseStub
+	fakeReturns := fake.closeReturns
 	fake.recordInvocation("Close", []interface{}{})
 	fake.closeMutex.Unlock()
-	if fake.CloseStub != nil {
-		return fake.CloseStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.closeReturns
 	return fakeReturns.result1
 }
 
@@ -230,15 +231,16 @@ func (fake *FakeFile) Name() string {
 	ret, specificReturn := fake.nameReturnsOnCall[len(fake.nameArgsForCall)]
 	fake.nameArgsForCall = append(fake.nameArgsForCall, struct {
 	}{})
+	stub := fake.NameStub
+	fakeReturns := fake.nameReturns
 	fake.recordInvocation("Name", []interface{}{})
 	fake.nameMutex.Unlock()
-	if fake.NameStub != nil {
-		return fake.NameStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.nameReturns
 	return fakeReturns.result1
 }
 
@@ -288,15 +290,16 @@ func (fake *FakeFile) Read(arg1 []byte) (int, error) {
 	fake.readArgsForCall = append(fake.readArgsForCall, struct {
 		arg1 []byte
 	}{arg1Copy})
+	stub := fake.ReadStub
+	fakeReturns := fake.readReturns
 	fake.recordInvocation("Read", []interface{}{arg1Copy})
 	fake.readMutex.Unlock()
-	if fake.ReadStub != nil {
-		return fake.ReadStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.readReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -357,15 +360,16 @@ func (fake *FakeFile) ReadAt(arg1 []byte, arg2 int64) (int, error) {
 		arg1 []byte
 		arg2 int64
 	}{arg1Copy, arg2})
+	stub := fake.ReadAtStub
+	fakeReturns := fake.readAtReturns
 	fake.recordInvocation("ReadAt", []interface{}{arg1Copy, arg2})
 	fake.readAtMutex.Unlock()
-	if fake.ReadAtStub != nil {
-		return fake.ReadAtStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.readAtReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -420,15 +424,16 @@ func (fake *FakeFile) Readdir(arg1 int) ([]os.FileInfo, error) {
 	fake.readdirArgsForCall = append(fake.readdirArgsForCall, struct {
 		arg1 int
 	}{arg1})
+	stub := fake.ReaddirStub
+	fakeReturns := fake.readdirReturns
 	fake.recordInvocation("Readdir", []interface{}{arg1})
 	fake.readdirMutex.Unlock()
-	if fake.ReaddirStub != nil {
-		return fake.ReaddirStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.readdirReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -483,15 +488,16 @@ func (fake *FakeFile) Readdirnames(arg1 int) ([]string, error) {
 	fake.readdirnamesArgsForCall = append(fake.readdirnamesArgsForCall, struct {
 		arg1 int
 	}{arg1})
+	stub := fake.ReaddirnamesStub
+	fakeReturns := fake.readdirnamesReturns
 	fake.recordInvocation("Readdirnames", []interface{}{arg1})
 	fake.readdirnamesMutex.Unlock()
-	if fake.ReaddirnamesStub != nil {
-		return fake.ReaddirnamesStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.readdirnamesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -547,15 +553,16 @@ func (fake *FakeFile) Seek(arg1 int64, arg2 int) (int64, error) {
 		arg1 int64
 		arg2 int
 	}{arg1, arg2})
+	stub := fake.SeekStub
+	fakeReturns := fake.seekReturns
 	fake.recordInvocation("Seek", []interface{}{arg1, arg2})
 	fake.seekMutex.Unlock()
-	if fake.SeekStub != nil {
-		return fake.SeekStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.seekReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -609,15 +616,16 @@ func (fake *FakeFile) Stat() (os.FileInfo, error) {
 	ret, specificReturn := fake.statReturnsOnCall[len(fake.statArgsForCall)]
 	fake.statArgsForCall = append(fake.statArgsForCall, struct {
 	}{})
+	stub := fake.StatStub
+	fakeReturns := fake.statReturns
 	fake.recordInvocation("Stat", []interface{}{})
 	fake.statMutex.Unlock()
-	if fake.StatStub != nil {
-		return fake.StatStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.statReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -664,15 +672,16 @@ func (fake *FakeFile) Sync() error {
 	ret, specificReturn := fake.syncReturnsOnCall[len(fake.syncArgsForCall)]
 	fake.syncArgsForCall = append(fake.syncArgsForCall, struct {
 	}{})
+	stub := fake.SyncStub
+	fakeReturns := fake.syncReturns
 	fake.recordInvocation("Sync", []interface{}{})
 	fake.syncMutex.Unlock()
-	if fake.SyncStub != nil {
-		return fake.SyncStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.syncReturns
 	return fakeReturns.result1
 }
 
@@ -717,15 +726,16 @@ func (fake *FakeFile) Truncate(arg1 int64) error {
 	fake.truncateArgsForCall = append(fake.truncateArgsForCall, struct {
 		arg1 int64
 	}{arg1})
+	stub := fake.TruncateStub
+	fakeReturns := fake.truncateReturns
 	fake.recordInvocation("Truncate", []interface{}{arg1})
 	fake.truncateMutex.Unlock()
-	if fake.TruncateStub != nil {
-		return fake.TruncateStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.truncateReturns
 	return fakeReturns.result1
 }
 
@@ -782,15 +792,16 @@ func (fake *FakeFile) Write(arg1 []byte) (int, error) {
 	fake.writeArgsForCall = append(fake.writeArgsForCall, struct {
 		arg1 []byte
 	}{arg1Copy})
+	stub := fake.WriteStub
+	fakeReturns := fake.writeReturns
 	fake.recordInvocation("Write", []interface{}{arg1Copy})
 	fake.writeMutex.Unlock()
-	if fake.WriteStub != nil {
-		return fake.WriteStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.writeReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -851,15 +862,16 @@ func (fake *FakeFile) WriteAt(arg1 []byte, arg2 int64) (int, error) {
 		arg1 []byte
 		arg2 int64
 	}{arg1Copy, arg2})
+	stub := fake.WriteAtStub
+	fakeReturns := fake.writeAtReturns
 	fake.recordInvocation("WriteAt", []interface{}{arg1Copy, arg2})
 	fake.writeAtMutex.Unlock()
-	if fake.WriteAtStub != nil {
-		return fake.WriteAtStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.writeAtReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -914,15 +926,16 @@ func (fake *FakeFile) WriteString(arg1 string) (int, error) {
 	fake.writeStringArgsForCall = append(fake.writeStringArgsForCall, struct {
 		arg1 string
 	}{arg1})
+	stub := fake.WriteStringStub
+	fakeReturns := fake.writeStringReturns
 	fake.recordInvocation("WriteString", []interface{}{arg1})
 	fake.writeStringMutex.Unlock()
-	if fake.WriteStringStub != nil {
-		return fake.WriteStringStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.writeStringReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 

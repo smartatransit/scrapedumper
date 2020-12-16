@@ -79,15 +79,16 @@ func (fake *FakeFileInfo) IsDir() bool {
 	ret, specificReturn := fake.isDirReturnsOnCall[len(fake.isDirArgsForCall)]
 	fake.isDirArgsForCall = append(fake.isDirArgsForCall, struct {
 	}{})
+	stub := fake.IsDirStub
+	fakeReturns := fake.isDirReturns
 	fake.recordInvocation("IsDir", []interface{}{})
 	fake.isDirMutex.Unlock()
-	if fake.IsDirStub != nil {
-		return fake.IsDirStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.isDirReturns
 	return fakeReturns.result1
 }
 
@@ -131,15 +132,16 @@ func (fake *FakeFileInfo) ModTime() time.Time {
 	ret, specificReturn := fake.modTimeReturnsOnCall[len(fake.modTimeArgsForCall)]
 	fake.modTimeArgsForCall = append(fake.modTimeArgsForCall, struct {
 	}{})
+	stub := fake.ModTimeStub
+	fakeReturns := fake.modTimeReturns
 	fake.recordInvocation("ModTime", []interface{}{})
 	fake.modTimeMutex.Unlock()
-	if fake.ModTimeStub != nil {
-		return fake.ModTimeStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.modTimeReturns
 	return fakeReturns.result1
 }
 
@@ -183,15 +185,16 @@ func (fake *FakeFileInfo) Mode() os.FileMode {
 	ret, specificReturn := fake.modeReturnsOnCall[len(fake.modeArgsForCall)]
 	fake.modeArgsForCall = append(fake.modeArgsForCall, struct {
 	}{})
+	stub := fake.ModeStub
+	fakeReturns := fake.modeReturns
 	fake.recordInvocation("Mode", []interface{}{})
 	fake.modeMutex.Unlock()
-	if fake.ModeStub != nil {
-		return fake.ModeStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.modeReturns
 	return fakeReturns.result1
 }
 
@@ -235,15 +238,16 @@ func (fake *FakeFileInfo) Name() string {
 	ret, specificReturn := fake.nameReturnsOnCall[len(fake.nameArgsForCall)]
 	fake.nameArgsForCall = append(fake.nameArgsForCall, struct {
 	}{})
+	stub := fake.NameStub
+	fakeReturns := fake.nameReturns
 	fake.recordInvocation("Name", []interface{}{})
 	fake.nameMutex.Unlock()
-	if fake.NameStub != nil {
-		return fake.NameStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.nameReturns
 	return fakeReturns.result1
 }
 
@@ -287,15 +291,16 @@ func (fake *FakeFileInfo) Size() int64 {
 	ret, specificReturn := fake.sizeReturnsOnCall[len(fake.sizeArgsForCall)]
 	fake.sizeArgsForCall = append(fake.sizeArgsForCall, struct {
 	}{})
+	stub := fake.SizeStub
+	fakeReturns := fake.sizeReturns
 	fake.recordInvocation("Size", []interface{}{})
 	fake.sizeMutex.Unlock()
-	if fake.SizeStub != nil {
-		return fake.SizeStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.sizeReturns
 	return fakeReturns.result1
 }
 
@@ -339,15 +344,16 @@ func (fake *FakeFileInfo) Sys() interface{} {
 	ret, specificReturn := fake.sysReturnsOnCall[len(fake.sysArgsForCall)]
 	fake.sysArgsForCall = append(fake.sysArgsForCall, struct {
 	}{})
+	stub := fake.SysStub
+	fakeReturns := fake.sysReturns
 	fake.recordInvocation("Sys", []interface{}{})
 	fake.sysMutex.Unlock()
-	if fake.SysStub != nil {
-		return fake.SysStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.sysReturns
 	return fakeReturns.result1
 }
 

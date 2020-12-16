@@ -26,7 +26,7 @@ type FakeRepository struct {
 	addArrivalEstimateReturnsOnCall map[int]struct {
 		result1 error
 	}
-	CreateRunRecordStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Line, martaapi.Direction) error
+	CreateRunRecordStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Line, martaapi.Direction, *uint, *uint) error
 	createRunRecordMutex       sync.RWMutex
 	createRunRecordArgsForCall []struct {
 		arg1 martaapi.Direction
@@ -35,6 +35,8 @@ type FakeRepository struct {
 		arg4 postgres.EasternTime
 		arg5 martaapi.Line
 		arg6 martaapi.Direction
+		arg7 *uint
+		arg8 *uint
 	}
 	createRunRecordReturns struct {
 		result1 error
@@ -59,7 +61,7 @@ type FakeRepository struct {
 		result3 int64
 		result4 error
 	}
-	EnsureArrivalRecordStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station) error
+	EnsureArrivalRecordStub        func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station, *uint) error
 	ensureArrivalRecordMutex       sync.RWMutex
 	ensureArrivalRecordArgsForCall []struct {
 		arg1 martaapi.Direction
@@ -67,6 +69,7 @@ type FakeRepository struct {
 		arg3 string
 		arg4 postgres.EasternTime
 		arg5 martaapi.Station
+		arg6 *uint
 	}
 	ensureArrivalRecordReturns struct {
 		result1 error
@@ -74,9 +77,10 @@ type FakeRepository struct {
 	ensureArrivalRecordReturnsOnCall map[int]struct {
 		result1 error
 	}
-	EnsureTablesStub        func() error
+	EnsureTablesStub        func(bool) error
 	ensureTablesMutex       sync.RWMutex
 	ensureTablesArgsForCall []struct {
+		arg1 bool
 	}
 	ensureTablesReturns struct {
 		result1 error
@@ -216,7 +220,7 @@ func (fake *FakeRepository) AddArrivalEstimateReturnsOnCall(i int, result1 error
 	}{result1}
 }
 
-func (fake *FakeRepository) CreateRunRecord(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string, arg4 postgres.EasternTime, arg5 martaapi.Line, arg6 martaapi.Direction) error {
+func (fake *FakeRepository) CreateRunRecord(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string, arg4 postgres.EasternTime, arg5 martaapi.Line, arg6 martaapi.Direction, arg7 *uint, arg8 *uint) error {
 	fake.createRunRecordMutex.Lock()
 	ret, specificReturn := fake.createRunRecordReturnsOnCall[len(fake.createRunRecordArgsForCall)]
 	fake.createRunRecordArgsForCall = append(fake.createRunRecordArgsForCall, struct {
@@ -226,13 +230,15 @@ func (fake *FakeRepository) CreateRunRecord(arg1 martaapi.Direction, arg2 martaa
 		arg4 postgres.EasternTime
 		arg5 martaapi.Line
 		arg6 martaapi.Direction
-	}{arg1, arg2, arg3, arg4, arg5, arg6})
+		arg7 *uint
+		arg8 *uint
+	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8})
 	stub := fake.CreateRunRecordStub
 	fakeReturns := fake.createRunRecordReturns
-	fake.recordInvocation("CreateRunRecord", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6})
+	fake.recordInvocation("CreateRunRecord", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8})
 	fake.createRunRecordMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3, arg4, arg5, arg6)
+		return stub(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
 	}
 	if specificReturn {
 		return ret.result1
@@ -246,17 +252,17 @@ func (fake *FakeRepository) CreateRunRecordCallCount() int {
 	return len(fake.createRunRecordArgsForCall)
 }
 
-func (fake *FakeRepository) CreateRunRecordCalls(stub func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Line, martaapi.Direction) error) {
+func (fake *FakeRepository) CreateRunRecordCalls(stub func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Line, martaapi.Direction, *uint, *uint) error) {
 	fake.createRunRecordMutex.Lock()
 	defer fake.createRunRecordMutex.Unlock()
 	fake.CreateRunRecordStub = stub
 }
 
-func (fake *FakeRepository) CreateRunRecordArgsForCall(i int) (martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Line, martaapi.Direction) {
+func (fake *FakeRepository) CreateRunRecordArgsForCall(i int) (martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Line, martaapi.Direction, *uint, *uint) {
 	fake.createRunRecordMutex.RLock()
 	defer fake.createRunRecordMutex.RUnlock()
 	argsForCall := fake.createRunRecordArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6, argsForCall.arg7, argsForCall.arg8
 }
 
 func (fake *FakeRepository) CreateRunRecordReturns(result1 error) {
@@ -352,7 +358,7 @@ func (fake *FakeRepository) DeleteStaleRunsReturnsOnCall(i int, result1 int64, r
 	}{result1, result2, result3, result4}
 }
 
-func (fake *FakeRepository) EnsureArrivalRecord(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string, arg4 postgres.EasternTime, arg5 martaapi.Station) error {
+func (fake *FakeRepository) EnsureArrivalRecord(arg1 martaapi.Direction, arg2 martaapi.Line, arg3 string, arg4 postgres.EasternTime, arg5 martaapi.Station, arg6 *uint) error {
 	fake.ensureArrivalRecordMutex.Lock()
 	ret, specificReturn := fake.ensureArrivalRecordReturnsOnCall[len(fake.ensureArrivalRecordArgsForCall)]
 	fake.ensureArrivalRecordArgsForCall = append(fake.ensureArrivalRecordArgsForCall, struct {
@@ -361,13 +367,14 @@ func (fake *FakeRepository) EnsureArrivalRecord(arg1 martaapi.Direction, arg2 ma
 		arg3 string
 		arg4 postgres.EasternTime
 		arg5 martaapi.Station
-	}{arg1, arg2, arg3, arg4, arg5})
+		arg6 *uint
+	}{arg1, arg2, arg3, arg4, arg5, arg6})
 	stub := fake.EnsureArrivalRecordStub
 	fakeReturns := fake.ensureArrivalRecordReturns
-	fake.recordInvocation("EnsureArrivalRecord", []interface{}{arg1, arg2, arg3, arg4, arg5})
+	fake.recordInvocation("EnsureArrivalRecord", []interface{}{arg1, arg2, arg3, arg4, arg5, arg6})
 	fake.ensureArrivalRecordMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2, arg3, arg4, arg5)
+		return stub(arg1, arg2, arg3, arg4, arg5, arg6)
 	}
 	if specificReturn {
 		return ret.result1
@@ -381,17 +388,17 @@ func (fake *FakeRepository) EnsureArrivalRecordCallCount() int {
 	return len(fake.ensureArrivalRecordArgsForCall)
 }
 
-func (fake *FakeRepository) EnsureArrivalRecordCalls(stub func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station) error) {
+func (fake *FakeRepository) EnsureArrivalRecordCalls(stub func(martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station, *uint) error) {
 	fake.ensureArrivalRecordMutex.Lock()
 	defer fake.ensureArrivalRecordMutex.Unlock()
 	fake.EnsureArrivalRecordStub = stub
 }
 
-func (fake *FakeRepository) EnsureArrivalRecordArgsForCall(i int) (martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station) {
+func (fake *FakeRepository) EnsureArrivalRecordArgsForCall(i int) (martaapi.Direction, martaapi.Line, string, postgres.EasternTime, martaapi.Station, *uint) {
 	fake.ensureArrivalRecordMutex.RLock()
 	defer fake.ensureArrivalRecordMutex.RUnlock()
 	argsForCall := fake.ensureArrivalRecordArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5, argsForCall.arg6
 }
 
 func (fake *FakeRepository) EnsureArrivalRecordReturns(result1 error) {
@@ -417,17 +424,18 @@ func (fake *FakeRepository) EnsureArrivalRecordReturnsOnCall(i int, result1 erro
 	}{result1}
 }
 
-func (fake *FakeRepository) EnsureTables() error {
+func (fake *FakeRepository) EnsureTables(arg1 bool) error {
 	fake.ensureTablesMutex.Lock()
 	ret, specificReturn := fake.ensureTablesReturnsOnCall[len(fake.ensureTablesArgsForCall)]
 	fake.ensureTablesArgsForCall = append(fake.ensureTablesArgsForCall, struct {
-	}{})
+		arg1 bool
+	}{arg1})
 	stub := fake.EnsureTablesStub
 	fakeReturns := fake.ensureTablesReturns
-	fake.recordInvocation("EnsureTables", []interface{}{})
+	fake.recordInvocation("EnsureTables", []interface{}{arg1})
 	fake.ensureTablesMutex.Unlock()
 	if stub != nil {
-		return stub()
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -441,10 +449,17 @@ func (fake *FakeRepository) EnsureTablesCallCount() int {
 	return len(fake.ensureTablesArgsForCall)
 }
 
-func (fake *FakeRepository) EnsureTablesCalls(stub func() error) {
+func (fake *FakeRepository) EnsureTablesCalls(stub func(bool) error) {
 	fake.ensureTablesMutex.Lock()
 	defer fake.ensureTablesMutex.Unlock()
 	fake.EnsureTablesStub = stub
+}
+
+func (fake *FakeRepository) EnsureTablesArgsForCall(i int) bool {
+	fake.ensureTablesMutex.RLock()
+	defer fake.ensureTablesMutex.RUnlock()
+	argsForCall := fake.ensureTablesArgsForCall[i]
+	return argsForCall.arg1
 }
 
 func (fake *FakeRepository) EnsureTablesReturns(result1 error) {
