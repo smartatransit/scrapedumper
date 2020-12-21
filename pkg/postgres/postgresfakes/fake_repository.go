@@ -88,10 +88,10 @@ type FakeRepository struct {
 	ensureTablesReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetLatestEstimatesStub        func(martaapi.Station) ([]postgres.LastestEstimate, error)
+	GetLatestEstimatesStub        func(uint) ([]postgres.LastestEstimate, error)
 	getLatestEstimatesMutex       sync.RWMutex
 	getLatestEstimatesArgsForCall []struct {
-		arg1 martaapi.Station
+		arg1 uint
 	}
 	getLatestEstimatesReturns struct {
 		result1 []postgres.LastestEstimate
@@ -485,11 +485,11 @@ func (fake *FakeRepository) EnsureTablesReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeRepository) GetLatestEstimates(arg1 martaapi.Station) ([]postgres.LastestEstimate, error) {
+func (fake *FakeRepository) GetLatestEstimates(arg1 uint) ([]postgres.LastestEstimate, error) {
 	fake.getLatestEstimatesMutex.Lock()
 	ret, specificReturn := fake.getLatestEstimatesReturnsOnCall[len(fake.getLatestEstimatesArgsForCall)]
 	fake.getLatestEstimatesArgsForCall = append(fake.getLatestEstimatesArgsForCall, struct {
-		arg1 martaapi.Station
+		arg1 uint
 	}{arg1})
 	stub := fake.GetLatestEstimatesStub
 	fakeReturns := fake.getLatestEstimatesReturns
@@ -510,13 +510,13 @@ func (fake *FakeRepository) GetLatestEstimatesCallCount() int {
 	return len(fake.getLatestEstimatesArgsForCall)
 }
 
-func (fake *FakeRepository) GetLatestEstimatesCalls(stub func(martaapi.Station) ([]postgres.LastestEstimate, error)) {
+func (fake *FakeRepository) GetLatestEstimatesCalls(stub func(uint) ([]postgres.LastestEstimate, error)) {
 	fake.getLatestEstimatesMutex.Lock()
 	defer fake.getLatestEstimatesMutex.Unlock()
 	fake.GetLatestEstimatesStub = stub
 }
 
-func (fake *FakeRepository) GetLatestEstimatesArgsForCall(i int) martaapi.Station {
+func (fake *FakeRepository) GetLatestEstimatesArgsForCall(i int) uint {
 	fake.getLatestEstimatesMutex.RLock()
 	defer fake.getLatestEstimatesMutex.RUnlock()
 	argsForCall := fake.getLatestEstimatesArgsForCall[i]
