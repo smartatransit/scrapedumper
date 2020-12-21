@@ -35,7 +35,7 @@ type Repository interface {
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
 
 	GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[string]Run, err error)
-	GetLatestEstimates(station martaapi.Station) (res []LastestEstimate, err error)
+	GetLatestEstimates(stationID uint) (res []LastestEstimate, err error)
 
 	DeleteStaleRuns(threshold EasternTime) (estimatesDropped int64, arrivalsDropped int64, runsDropped int64, err error)
 }
@@ -451,7 +451,7 @@ ORDER BY estimates.identifier ASC`,
 //GetRecentlyActiveRuns collects all the data about any runs that have been updated
 //since touchThreshold. The Run#Finished method can be used to determine which runs
 //have arrived at their terminal station, and can therefore be removed from state.
-func (a *RepositoryAgent) GetLatestEstimates(station martaapi.Station) (res []LastestEstimate, err error) {
+func (a *RepositoryAgent) GetLatestEstimates(stationID uint) (res []LastestEstimate, err error) {
 	rows, err := a.DB.Query(`
 WITH station_estimates AS (
   SELECT runs.run_group_identifier,
@@ -473,20 +473,21 @@ WITH station_estimates AS (
     ON estimates.arrival_identifier = arrivals.identifier
   JOIN runs
     ON arrivals.run_identifier = runs.identifier
+
   JOIN lines
     ON lines.id = runs.line_id
   JOIN directions
-    ON lines.id = runs.direction_id
+    ON directions.id = runs.direction_id
   JOIN stations
-    ON lines.id = arrivals.station_id
-  WHERE arrivals.station = $1
+    ON stations.id = arrivals.station_id
+  WHERE arrivals.station_id = $1
     AND arrivals.arrival_time IS NULL)
 
 SELECT *
   FROM station_estimates
   WHERE rank = 1
 `,
-		station,
+		stationID,
 	)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to fetch arrival estimates")
