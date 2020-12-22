@@ -24,7 +24,7 @@ var _ = Describe("Upserter", func() {
 	})
 
 	JustBeforeEach(func() {
-		upserter = postgres.NewUpserter(repo, 10*time.Minute)
+		upserter = postgres.NewUpserter(repo, 10*time.Minute, false)
 	})
 
 	Describe("AddRecordToDatabase", func() {
@@ -50,7 +50,7 @@ var _ = Describe("Upserter", func() {
 			)
 		})
 		JustBeforeEach(func() {
-			callErr = upserter.AddRecordToDatabase(rec, martaapi.Green, martaapi.North)
+			callErr = upserter.AddRecordToDatabase(rec, martaapi.Green, martaapi.North, nil, nil, nil)
 		})
 		When("the eventTime is malformed", func() {
 			BeforeEach(func() {
@@ -83,7 +83,7 @@ var _ = Describe("Upserter", func() {
 				It("fails", func() {
 					Expect(callErr).To(MatchError("failed to create run record for `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: create run failed"))
 
-					_, _, _, runStartMoment, _, _ := repo.CreateRunRecordArgsForCall(0)
+					_, _, _, runStartMoment, _, _, _, _ := repo.CreateRunRecordArgsForCall(0)
 					Expect(runStartMoment).To(Equal(easternDate(2019, time.June, 18, 21, 41, 2, 0)))
 				})
 			})
@@ -95,7 +95,7 @@ var _ = Describe("Upserter", func() {
 				})
 				It("fails", func() {
 					Expect(callErr).To(MatchError("failed to ensure pre-existing arrival record for `N:GOLD:DORAVILLE STATION:324898:6/18/2019 9:41:02 PM:false`: query failed"))
-					_, _, _, runStartMoment, _ := repo.EnsureArrivalRecordArgsForCall(0)
+					_, _, _, runStartMoment, _, _ := repo.EnsureArrivalRecordArgsForCall(0)
 					Expect(runStartMoment).To(Equal(easternDate(2019, time.June, 18, 21, 42, 2, 0)))
 				})
 			})

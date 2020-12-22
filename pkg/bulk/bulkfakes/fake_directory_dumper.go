@@ -32,15 +32,16 @@ func (fake *FakeDirectoryDumper) DumpDirectory(arg1 context.Context, arg2 string
 		arg1 context.Context
 		arg2 string
 	}{arg1, arg2})
+	stub := fake.DumpDirectoryStub
+	fakeReturns := fake.dumpDirectoryReturns
 	fake.recordInvocation("DumpDirectory", []interface{}{arg1, arg2})
 	fake.dumpDirectoryMutex.Unlock()
-	if fake.DumpDirectoryStub != nil {
-		return fake.DumpDirectoryStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.dumpDirectoryReturns
 	return fakeReturns.result1
 }
 

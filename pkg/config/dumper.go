@@ -4,14 +4,18 @@ import (
 	"database/sql"
 	"time"
 
+	"go.uber.org/zap"
+	gpostgres "gorm.io/driver/postgres"
+	"gorm.io/gorm"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
-	"go.uber.org/zap"
 
+	"github.com/smartatransit/scrapedumper/pkg/alias"
 	"github.com/smartatransit/scrapedumper/pkg/dumper"
 	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"github.com/smartatransit/scrapedumper/pkg/postgres"
@@ -45,6 +49,7 @@ type DumpConfig struct {
 	S3BucketName             string       `json:"s3_bucket_name"`
 	DynamoTableName          string       `json:"dynamo_table_name"`
 	PostgresConnectionString string       `json:"postgres_connection_string"`
+	ThirdRailContext         bool         `json:"third_rail_context"`
 }
 
 //ErrDumperValidationFailed indicates that a dumper's configuration was invalid
@@ -131,14 +136,29 @@ func BuildDumper(
 		}
 
 		repo := postgres.NewRepository(log, db)
-		err = repo.EnsureTables()
+		err = repo.EnsureTables(c.ThirdRailContext)
 		if err != nil {
 			db.Close()
 			return nil, nil, errors.Wrap(err, "failed to ensure postgres tables")
 		}
 
-		upserter := postgres.NewUpserter(repo, time.Hour)
-		return dumper.NewPostgresDumpHandler(log, upserter), db.Close, nil
+		// This feature won't work properly unless scrapedumper is deployed inside
+		// of a third-rail database
+		var aliaser alias.AliasLookup
+		if c.ThirdRailContext {
+			gormDB, err := gorm.Open(gpostgres.New(gpostgres.Config{
+				Conn: db,
+			}), &gorm.Config{})
+			if err != nil {
+				db.Close()
+				return nil, nil, errors.Wrap(err, "failed to open gorm DB connection")
+			}
+
+			aliaser = alias.New(gormDB)
+		}
+
+		upserter := postgres.NewUpserter(repo, time.Hour, c.ThirdRailContext)
+		return dumper.NewPostgresDumpHandler(log, upserter, aliaser), db.Close, nil
 	default:
 		return nil, nil, errors.Wrapf(ErrDumperValidationFailed, "unsupported dumper kind `%s`", string(c.Kind))
 	}

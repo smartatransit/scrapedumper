@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"github.com/pkg/errors"
+	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"go.uber.org/zap"
 )
 
 type LastestEstimate struct {
-	Direction   martaapi.Direction
-	Line        martaapi.Line
+	Direction   string
+	Line        string
+	Station     string
+	DirectionID *uint
+	LineID      *uint
+	StationID   *uint
 	TrainID     string
 
 	NextArrival EasternTime
@@ -22,16 +26,16 @@ type LastestEstimate struct {
 //Repository implements interactions with Postgres through GORM
 //go:generate counterfeiter . Repository
 type Repository interface {
-	EnsureTables() error
+	EnsureTables(thirdRail bool) error
 
 	GetLatestRunStartMomentFor(dir martaapi.Direction, line martaapi.Line, trainID string, asOfMoment EasternTime) (runFirstEventMoment EasternTime, mostRecentEventTime EasternTime, err error)
-	CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction) (err error)
-	EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station) (err error)
+	CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction, lineID *uint, dirID *uint) (err error)
+	EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, stationID *uint) (err error)
 	AddArrivalEstimate(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, estimate EasternTime) (err error)
 	SetArrivalTime(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, eventTime EasternTime, arrival EasternTime) (err error)
 
 	GetRecentlyActiveRuns(touchThreshold EasternTime) (runs map[string]Run, err error)
-	GetLatestEstimates(station martaapi.Station) (res []LastestEstimate, err error)
+	GetLatestEstimates(stationID uint) (res []LastestEstimate, err error)
 
 	DeleteStaleRuns(threshold EasternTime) (estimatesDropped int64, arrivalsDropped int64, runsDropped int64, err error)
 }
@@ -79,30 +83,55 @@ func ParseRunGroupIdentifier(id string) (dir martaapi.Direction, line martaapi.L
 	return martaapi.Direction(parts[0]), martaapi.Line(parts[1]), parts[2]
 }
 
-//EnsureTables ensures that all necessary tables exist
-func (a *RepositoryAgent) EnsureTables() error {
-	_, err := a.DB.Exec(`
+//EnsureTables ensures that all necessary tables exist. Three fields (line_id,
+//station_id, and direction_id) are always included, however if thirdRail is
+//false, they are always left empty. Including them in both cases simplifies
+//our update/select queries.
+func (a *RepositoryAgent) EnsureTables(thirdRail bool) error {
+	runsExtras := `
+	line_id integer,
+	direction_id integer,
+`
+	if thirdRail {
+		runsExtras = `
+	line_id integer REFERENCES lines(id),
+	direction_id integer REFERENCES directions(id),
+`
+	}
+
+	_, err := a.DB.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS runs
 (	identifier varchar,
 	run_group_identifier varchar NOT NULL,
 	corrected_line varchar NOT NULL,
 	corrected_direction varchar NOT NULL,
 	most_recent_event_moment varchar NOT NULL,
-	run_first_event_moment varchar NOT NULL,
+	run_first_event_moment varchar NOT NULL,%s
+
 	PRIMARY KEY (identifier)
-)`)
+)`, runsExtras))
 	if err != nil {
 		return errors.Wrapf(err, "failed to ensure runs table")
 	}
 
-	_, err = a.DB.Exec(`
+	arrivalExtras := `
+	station_id integer,
+`
+	if thirdRail {
+		arrivalExtras = `
+	station_id integer REFERENCES stations(id),
+`
+	}
+
+	_, err = a.DB.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS arrivals
 (	identifier varchar,
 	run_identifier varchar NOT NULL,
 	station varchar NOT NULL,
-	arrival_time varchar,
+	arrival_time varchar,%s
+
 	PRIMARY KEY (identifier)
-)`)
+)`, arrivalExtras))
 	if err != nil {
 		return errors.Wrapf(err, "failed to ensure arrivals table")
 	}
@@ -171,17 +200,19 @@ LIMIT 1`,
 }
 
 //CreateRunRecord inserts this run to the run table
-func (a *RepositoryAgent) CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction) (err error) {
+func (a *RepositoryAgent) CreateRunRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, correctedLine martaapi.Line, correctedDirection martaapi.Direction, lineID *uint, dirID *uint) (err error) {
 	res, err := a.DB.Exec(`
 INSERT INTO runs
-(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment, corrected_line, corrected_direction)
-VALUES ($1, $2, $3, $4, $5, $6)`,
+(identifier, run_group_identifier, most_recent_event_moment, run_first_event_moment, corrected_line, corrected_direction, line_id, direction_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 		RunIdentifierFor(dir, line, trainID, runFirstEventMoment),
 		RunGroupIdentifierFor(dir, line, trainID),
 		runFirstEventMoment, //most_recent_event_moment
 		runFirstEventMoment,
 		correctedLine,
 		correctedDirection,
+		lineID,
+		dirID,
 	)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to create run for dir `%s` line `%s` train `%s` and first event moment `%s`", dir, line, trainID, runFirstEventMoment)
@@ -202,15 +233,16 @@ VALUES ($1, $2, $3, $4, $5, $6)`,
 }
 
 //EnsureArrivalRecord ensures that a record exists for the specified arrival
-func (a *RepositoryAgent) EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station) (err error) {
+func (a *RepositoryAgent) EnsureArrivalRecord(dir martaapi.Direction, line martaapi.Line, trainID string, runFirstEventMoment EasternTime, station martaapi.Station, stationID *uint) (err error) {
 	_, err = a.DB.Exec(`
 INSERT INTO arrivals
-(identifier, run_identifier, station)
-VALUES ($1, $2, $3)
+(identifier, run_identifier, station, station_id)
+VALUES ($1, $2, $3, $4)
 ON CONFLICT DO NOTHING`,
 		ArrivalIdentifierFor(dir, line, trainID, runFirstEventMoment, station),
 		RunIdentifierFor(dir, line, trainID, runFirstEventMoment),
 		station,
+		stationID,
 	)
 	err = errors.Wrapf(err, "failed to ensure arrival for dir `%s` line `%s` train `%s` first event moment `%s` and station `%s`", dir, line, trainID, runFirstEventMoment, station)
 	return
@@ -419,12 +451,21 @@ ORDER BY estimates.identifier ASC`,
 //GetRecentlyActiveRuns collects all the data about any runs that have been updated
 //since touchThreshold. The Run#Finished method can be used to determine which runs
 //have arrived at their terminal station, and can therefore be removed from state.
-func (a *RepositoryAgent) GetLatestEstimates(station martaapi.Station) (res []LastestEstimate, err error) {
+func (a *RepositoryAgent) GetLatestEstimates(stationID uint) (res []LastestEstimate, err error) {
 	rows, err := a.DB.Query(`
 WITH station_estimates AS (
   SELECT runs.run_group_identifier,
     estimates.estimated_arrival_time,
     estimates.estimate_moment,
+
+    directions.name,
+    lines.name,
+    stations.name,
+
+    directions.id,
+    lines.id,
+    stations.id,
+
     ROW_NUMBER() OVER (PARTITION BY runs.run_group_identifier
       ORDER BY estimates.estimate_moment DESC) AS rank
   FROM arrivals
@@ -432,14 +473,21 @@ WITH station_estimates AS (
     ON estimates.arrival_identifier = arrivals.identifier
   JOIN runs
     ON arrivals.run_identifier = runs.identifier
-  WHERE arrivals.station = $1
+
+  JOIN lines
+    ON lines.id = runs.line_id
+  JOIN directions
+    ON directions.id = runs.direction_id
+  JOIN stations
+    ON stations.id = arrivals.station_id
+  WHERE arrivals.station_id = $1
     AND arrivals.arrival_time IS NULL)
 
 SELECT *
   FROM station_estimates
   WHERE rank = 1
 `,
-		station,
+		stationID,
 	)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to fetch arrival estimates")
@@ -449,21 +497,44 @@ SELECT *
 	res = []LastestEstimate{}
 	for rows.Next() {
 		var sched LastestEstimate
-		var rgIdentifier string
+		var rgIdentifier, dir, line, station string
+		var dirID, lineID, stationID sql.NullInt32
 		err = rows.Scan(
 			&rgIdentifier,
 			&sched.NextArrival,
 			&sched.EventTime,
+
+			&dir,
+			&line,
+			&station,
+			&dirID,
+			&lineID,
+			&stationID,
 		)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to scan run")
 			return
 		}
 
-		dir, line, train := ParseRunGroupIdentifier(rgIdentifier)
+		_, _, train := ParseRunGroupIdentifier(rgIdentifier)
 		sched.Direction = dir
-		sched.Line      = line
-		sched.TrainID   = train
+		sched.Line = line
+		sched.Station = station
+		sched.TrainID = train
+		if dirID.Valid {
+			var u uint = uint(dirID.Int32)
+			sched.DirectionID = &u
+		}
+		if lineID.Valid {
+			var u uint = uint(lineID.Int32)
+			sched.LineID = &u
+		}
+		if stationID.Valid {
+			var u uint = uint(stationID.Int32)
+			sched.StationID = &u
+		}
+
+		res = append(res, sched)
 	}
 
 	return

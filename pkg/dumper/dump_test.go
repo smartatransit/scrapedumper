@@ -6,13 +6,13 @@ import (
 	"io"
 	"strings"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	"github.com/smartatransit/scrapedumper/pkg/dumper"
 	"github.com/smartatransit/scrapedumper/pkg/dumper/dumperfakes"
 	"github.com/smartatransit/scrapedumper/pkg/martaapi"
 	"github.com/smartatransit/scrapedumper/pkg/postgres/postgresfakes"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 	"github.com/spf13/afero"
 	"go.uber.org/zap"
 )
@@ -196,6 +196,7 @@ var _ = Describe("Dump", func() {
 			dh = dumper.NewPostgresDumpHandler(
 				logger,
 				upserter,
+				nil,
 			)
 			err = dh.Dump(context.Background(), r, "somepath")
 		})
@@ -222,7 +223,7 @@ var _ = Describe("Dump", func() {
 				Expect(err).To(BeNil())
 				Expect(upserter.AddRecordToDatabaseCallCount()).To(Equal(4))
 
-				_, l, d := upserter.AddRecordToDatabaseArgsForCall(0)
+				_, l, d, _, _, _ := upserter.AddRecordToDatabaseArgsForCall(0)
 				Expect(l).To(Equal(martaapi.Blue))
 				Expect(d).To(Equal(martaapi.North))
 			})

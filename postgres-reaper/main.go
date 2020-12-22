@@ -40,7 +40,7 @@ func main() {
 	defer db.Close()
 
 	repo := postgres.NewRepository(logger, db)
-	err = repo.EnsureTables()
+	err = repo.EnsureTables(false)
 	if err != nil {
 		log.Fatal(err)
 	}
