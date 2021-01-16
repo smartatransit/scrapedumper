@@ -4,128 +4,128 @@ package martaapi
 type Direction string
 
 const (
-	North Direction = "N"
-	South Direction = "S"
-	East  Direction = "E"
-	West  Direction = "W"
+	North Direction = "Northbound"
+	South Direction = "Southbound"
+	East  Direction = "Eastbound"
+	West  Direction = "Westbound"
 )
 
 //Directions is for checking whether a string represents a valid Direction
 var Directions = map[Direction]struct{}{
-	North: struct{}{},
-	South: struct{}{},
-	East:  struct{}{},
-	West:  struct{}{},
+	North: {},
+	South: {},
+	East:  {},
+	West:  {},
 }
 
 //Line enumerates all valid MARTA line names
 type Line string
 
 const (
-	Green Line = "GREEN"
-	Blue  Line = "BLUE"
-	Gold  Line = "GOLD"
-	Red   Line = "RED"
+	Green Line = "Green"
+	Blue  Line = "Blue"
+	Gold  Line = "Gold"
+	Red   Line = "Red"
 )
 
 //Lines is for checking whether a string represents a valid Line
 var Lines = map[Line]struct{}{
-	Green: struct{}{},
-	Blue:  struct{}{},
-	Gold:  struct{}{},
-	Red:   struct{}{},
+	Green: {},
+	Blue:  {},
+	Gold:  {},
+	Red:   {},
 }
 
 //Station enumerates all valid MARTA station names
 type Station string
 
 const (
-	FivePointsStation          Station = "FIVE POINTS STATION"
-	OaklandCityStation         Station = "OAKLAND CITY STATION"
-	AirportStation             Station = "AIRPORT STATION"
-	BrookhavenStation          Station = "BROOKHAVEN STATION"
-	KensingtonStation          Station = "KENSINGTON STATION"
-	OmniDomeStation            Station = "OMNI DOME STATION"
-	DecaturStation             Station = "DECATUR STATION"
-	InmanParkStation           Station = "INMAN PARK STATION"
-	SandySpringsStation        Station = "SANDY SPRINGS STATION"
-	IndianCreekStation         Station = "INDIAN CREEK STATION"
-	DunwoodyStation            Station = "DUNWOODY STATION"
-	KingMemorialStation        Station = "KING MEMORIAL STATION"
-	VineCityStation            Station = "VINE CITY STATION"
-	NorthSpringsStation        Station = "NORTH SPRINGS STATION"
-	MedicalCenterStation       Station = "MEDICAL CENTER STATION"
-	ArtsCenterStation          Station = "ARTS CENTER STATION"
-	EastPointStation           Station = "EAST POINT STATION"
-	CivicCenterStation         Station = "CIVIC CENTER STATION"
-	CollegeParkStation         Station = "COLLEGE PARK STATION"
-	ChambleeStation            Station = "CHAMBLEE STATION"
-	AvondaleStation            Station = "AVONDALE STATION"
-	LindberghStation           Station = "LINDBERGH STATION"
-	GarnettStation             Station = "GARNETT STATION"
-	PeachtreeCenterStation     Station = "PEACHTREE CENTER STATION"
-	WestLakeStation            Station = "WEST LAKE STATION"
-	EastLakeStation            Station = "EAST LAKE STATION"
-	GeorgiaStateStation        Station = "GEORGIA STATE STATION"
-	BankheadStation            Station = "BANKHEAD STATION"
-	BuckheadStation            Station = "BUCKHEAD STATION"
-	WestEndStation             Station = "WEST END STATION"
-	LakewoodStation            Station = "LAKEWOOD STATION"
-	MidtownStation             Station = "MIDTOWN STATION"
-	DoravilleStation           Station = "DORAVILLE STATION"
-	LenoxStation               Station = "LENOX STATION"
-	EdgewoodCandlerParkStation Station = "EDGEWOOD CANDLER PARK STATION"
-	NorthAveStation            Station = "NORTH AVE STATION"
-	AshbyStation               Station = "ASHBY STATION"
-	HamiltonEHolmesStation     Station = "HAMILTON E HOLMES STATION"
+	AirportStation             Station = "Airport"
+	ArtsCenterStation          Station = "Arts Center"
+	AshbyStation               Station = "Ashby"
+	AvondaleStation            Station = "Avondale"
+	BankheadStation            Station = "Bankhead"
+	BrookhavenStation          Station = "Brookhaven"
+	BuckheadStation            Station = "Buckhead"
+	ChambleeStation            Station = "Chamblee"
+	CivicCenterStation         Station = "Civic Center"
+	CollegeParkStation         Station = "College Park"
+	DecaturStation             Station = "Decatur"
+	DoravilleStation           Station = "Doraville"
+	DunwoodyStation            Station = "Dunwoody"
+	EastLakeStation            Station = "East Lake"
+	EastPointStation           Station = "East Point"
+	EdgewoodCandlerParkStation Station = "Edgewood-Candler Park"
+	FivePointsStation          Station = "Five Points"
+	GarnettStation             Station = "Garnett"
+	GeorgiaStateStation        Station = "Georgia State"
+	HamiltonEHolmesStation     Station = "H. E. Holmes"
+	IndianCreekStation         Station = "Indian Creek"
+	InmanParkStation           Station = "Inman Park"
+	KensingtonStation          Station = "Kensington"
+	KingMemorialStation        Station = "King Memorial"
+	LakewoodStation            Station = "Lakewood"
+	LenoxStation               Station = "Lenox"
+	LindberghStation           Station = "Lindbergh Center"
+	MedicalCenterStation       Station = "Medical Center"
+	MidtownStation             Station = "Midtown"
+	NorthAveStation            Station = "North Avenue"
+	NorthSpringsStation        Station = "North Springs"
+	OaklandCityStation         Station = "Oakland City"
+	OmniDomeStation            Station = "Omni Dome"
+	PeachtreeCenterStation     Station = "Peachtree Center"
+	SandySpringsStation        Station = "Sandy Springs"
+	VineCityStation            Station = "Vine City"
+	WestEndStation             Station = "West End"
+	WestLakeStation            Station = "West Lake"
 )
 
 //Stations is for checking whether a string represents a valid station
 var Stations = map[Station]struct{}{
-	FivePointsStation:          struct{}{},
-	OaklandCityStation:         struct{}{},
-	AirportStation:             struct{}{},
-	BrookhavenStation:          struct{}{},
-	KensingtonStation:          struct{}{},
-	OmniDomeStation:            struct{}{},
-	DecaturStation:             struct{}{},
-	InmanParkStation:           struct{}{},
-	SandySpringsStation:        struct{}{},
-	IndianCreekStation:         struct{}{},
-	DunwoodyStation:            struct{}{},
-	KingMemorialStation:        struct{}{},
-	VineCityStation:            struct{}{},
-	NorthSpringsStation:        struct{}{},
-	MedicalCenterStation:       struct{}{},
-	ArtsCenterStation:          struct{}{},
-	EastPointStation:           struct{}{},
-	CivicCenterStation:         struct{}{},
-	CollegeParkStation:         struct{}{},
-	ChambleeStation:            struct{}{},
-	AvondaleStation:            struct{}{},
-	LindberghStation:           struct{}{},
-	GarnettStation:             struct{}{},
-	PeachtreeCenterStation:     struct{}{},
-	WestLakeStation:            struct{}{},
-	EastLakeStation:            struct{}{},
-	GeorgiaStateStation:        struct{}{},
-	BankheadStation:            struct{}{},
-	BuckheadStation:            struct{}{},
-	WestEndStation:             struct{}{},
-	LakewoodStation:            struct{}{},
-	MidtownStation:             struct{}{},
-	DoravilleStation:           struct{}{},
-	LenoxStation:               struct{}{},
-	EdgewoodCandlerParkStation: struct{}{},
-	NorthAveStation:            struct{}{},
-	AshbyStation:               struct{}{},
-	HamiltonEHolmesStation:     struct{}{},
+	FivePointsStation:          {},
+	OaklandCityStation:         {},
+	AirportStation:             {},
+	BrookhavenStation:          {},
+	KensingtonStation:          {},
+	OmniDomeStation:            {},
+	DecaturStation:             {},
+	InmanParkStation:           {},
+	SandySpringsStation:        {},
+	IndianCreekStation:         {},
+	DunwoodyStation:            {},
+	KingMemorialStation:        {},
+	VineCityStation:            {},
+	NorthSpringsStation:        {},
+	MedicalCenterStation:       {},
+	ArtsCenterStation:          {},
+	EastPointStation:           {},
+	CivicCenterStation:         {},
+	CollegeParkStation:         {},
+	ChambleeStation:            {},
+	AvondaleStation:            {},
+	LindberghStation:           {},
+	GarnettStation:             {},
+	PeachtreeCenterStation:     {},
+	WestLakeStation:            {},
+	EastLakeStation:            {},
+	GeorgiaStateStation:        {},
+	BankheadStation:            {},
+	BuckheadStation:            {},
+	WestEndStation:             {},
+	LakewoodStation:            {},
+	MidtownStation:             {},
+	DoravilleStation:           {},
+	LenoxStation:               {},
+	EdgewoodCandlerParkStation: {},
+	NorthAveStation:            {},
+	AshbyStation:               {},
+	HamiltonEHolmesStation:     {},
 }
 
 //LineStations provides the stations on the line, in the order
 //specified by LineDirections[line][0].
 var LineStations = map[Line][]Station{
-	Green: []Station{
+	Green: {
 		BankheadStation,
 		AshbyStation,
 		VineCityStation,
@@ -136,7 +136,7 @@ var LineStations = map[Line][]Station{
 		InmanParkStation,
 		EdgewoodCandlerParkStation,
 	},
-	Blue: []Station{
+	Blue: {
 		HamiltonEHolmesStation,
 		WestLakeStation,
 		AshbyStation,
@@ -153,7 +153,7 @@ var LineStations = map[Line][]Station{
 		KensingtonStation,
 		IndianCreekStation,
 	},
-	Gold: []Station{
+	Gold: {
 		AirportStation,
 		CollegeParkStation,
 		EastPointStation,
@@ -173,7 +173,7 @@ var LineStations = map[Line][]Station{
 		ChambleeStation,
 		DoravilleStation,
 	},
-	Red: []Station{
+	Red: {
 		AirportStation,
 		CollegeParkStation,
 		EastPointStation,
@@ -199,27 +199,27 @@ var LineStations = map[Line][]Station{
 //LineDirections provides the directions that are compatible with
 //a given line.
 var LineDirections = map[Line][]Direction{
-	Green: []Direction{East, West},
-	Blue:  []Direction{East, West},
-	Gold:  []Direction{North, South},
-	Red:   []Direction{North, South},
+	Green: {East, West},
+	Blue:  {East, West},
+	Gold:  {North, South},
+	Red:   {North, South},
 }
 
 //Termini allow for lookups of all the terminuseses of the different lines
 var Termini = map[Line]map[Direction]Station{
-	Green: map[Direction]Station{
+	Green: {
 		East: EdgewoodCandlerParkStation,
 		West: BankheadStation,
 	},
-	Blue: map[Direction]Station{
+	Blue: {
 		East: IndianCreekStation,
 		West: HamiltonEHolmesStation,
 	},
-	Gold: map[Direction]Station{
+	Gold: {
 		North: DunwoodyStation,
 		South: AirportStation,
 	},
-	Red: map[Direction]Station{
+	Red: {
 		North: NorthSpringsStation,
 		South: AirportStation,
 	},

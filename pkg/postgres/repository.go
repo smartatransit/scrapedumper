@@ -18,6 +18,7 @@ type LastestEstimate struct {
 	LineID      *uint
 	StationID   *uint
 	TrainID     string
+	Destination string
 
 	NextArrival EasternTime
 	EventTime   EasternTime
@@ -521,6 +522,7 @@ SELECT *
 		sched.Line = line
 		sched.Station = station
 		sched.TrainID = train
+		sched.Destination = string(martaapi.Termini[martaapi.Line(line)][martaapi.Direction(dir)])
 		if dirID.Valid {
 			var u uint = uint(dirID.Int32)
 			sched.DirectionID = &u
