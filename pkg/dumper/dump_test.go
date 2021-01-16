@@ -170,23 +170,23 @@ var _ = Describe("Dump", func() {
 			upserter = &postgresfakes.FakeUpserter{}
 			r = strings.NewReader(`[
 				{
-					"DIRECTION": "N",
-					"LINE": "BLUE",
+					"DIRECTION": "Northbound",
+					"LINE": "Blue",
 					"TRAIN_ID": "206401"
 				},
 				{
-					"DIRECTION": "N",
-					"LINE": "BLUE",
+					"DIRECTION": "Northbound",
+					"LINE": "Blue",
 					"TRAIN_ID": "206402"
 				},
 				{
-					"DIRECTION": "N",
-					"LINE": "BLUE",
+					"DIRECTION": "Northbound",
+					"LINE": "Blue",
 					"TRAIN_ID": "206402"
 				},
 				{
-					"DIRECTION": "N",
-					"LINE": "BLUE",
+					"DIRECTION": "Northbound",
+					"LINE": "Blue",
 					"TRAIN_ID": "206401"
 				}
 			]`)
