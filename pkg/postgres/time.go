@@ -8,7 +8,7 @@ import (
 
 func init() {
 	var err error
-	EasternTimeZone, err = time.LoadLocation("US/Eastern")
+	EasternTimeZone, err = time.LoadLocation("America/New_York")
 	if err != nil {
 		panic("US/Eastern time zone not found")
 	}
