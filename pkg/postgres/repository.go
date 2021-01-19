@@ -455,17 +455,17 @@ ORDER BY estimates.identifier ASC`,
 func (a *RepositoryAgent) GetLatestEstimates(stationID uint) (res []LastestEstimate, err error) {
 	rows, err := a.DB.Query(`
 WITH station_estimates AS (
-  SELECT runs.run_group_identifier,
-    estimates.estimated_arrival_time,
-    estimates.estimate_moment,
+  SELECT runs.run_group_identifier AS run_group_identifier,
+    estimates.estimated_arrival_time AS estimated_arrival_time,
+    estimates.estimate_moment AS estimate_moment,
 
-    directions.name,
-    lines.name,
-    stations.name,
+    directions.name AS direction,
+    lines.name AS line,
+    stations.name AS station,
 
-    directions.id,
-    lines.id,
-    stations.id,
+    directions.id AS direction_id,
+    lines.id AS line_id,
+    stations.id AS station_id,
 
     ROW_NUMBER() OVER (PARTITION BY runs.run_group_identifier
       ORDER BY estimates.estimate_moment DESC) AS rank
@@ -484,7 +484,10 @@ WITH station_estimates AS (
   WHERE arrivals.station_id = $1
     AND arrivals.arrival_time IS NULL)
 
-SELECT *
+SELECT run_group_identifier,
+    estimated_arrival_time, estimate_moment,
+    direction, line, station,
+    direction_id, line_id, station_id
   FROM station_estimates
   WHERE rank = 1
 `,
@@ -505,12 +508,8 @@ SELECT *
 			&sched.NextArrival,
 			&sched.EventTime,
 
-			&dir,
-			&line,
-			&station,
-			&dirID,
-			&lineID,
-			&stationID,
+			&dir, &line, &station,
+			&dirID, &lineID, &stationID,
 		)
 		if err != nil {
 			err = errors.Wrapf(err, "failed to scan run")
